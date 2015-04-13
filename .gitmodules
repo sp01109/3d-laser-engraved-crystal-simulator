@@ -1,0 +1,3 @@
+[submodule "js/webgl-obj-loader"]
+	path = js/webgl-obj-loader
+	url = https://github.com/frenchtoast747/webgl-obj-loader.git
