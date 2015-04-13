@@ -1,0 +1,9 @@
+#OS X generate files
+*.DS_Store
+
+#temporary files
+*.*~
+*.tmp
+
+#git log file
+log
