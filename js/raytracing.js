@@ -246,27 +246,35 @@ void main(void) {
 
 	if(antiAliasing < 2)
 	{
-		vec3 origin = vec3(0.0,1.0,-8.0);
-	vec3 direction = normalize(vec3((gl_FragCoord.xy/uResolution-0.5)*2.0,1.0));
+		vec3 origin = vec3(0.0, 1.0,-8.0);
+		vec3 direction = normalize(vec3((gl_FragCoord.xy/uResolution-0.5)*2.0,1.0));
 		float t = 1000.0;
-	vec2 ID = vec2(-1.0,-1.0);
+		vec2 ID = vec2(-1.0,-1.0);
 
-	intersect(origin,direction,t,ID);
+		intersect(origin,direction,t,ID);
 
-	//if we intersected with an object
-	if(ID.x > 0.0)
-	{
-		vec4 color = computeLighting(origin,direction,t,ID);
+		//if we intersected with an object
+		if(ID.x > 0.0)
+		{
+			vec4 color = computeLighting(origin,direction,t,ID);
 
-		//if the object is reflective then add a reflective contribution
-		if(texture2D(objectMaterialsExtended,ID).y > EPSILON)
-			color += reflection(origin,direction,t,ID);
 
-		gl_FragColor += color;
 
-	}else{
-		gl_FragColor += vec4(0.0,0.0,0.4,1.0);
-	}
+
+
+
+
+
+
+			//if the object is reflective then add a reflective contribution
+			if(texture2D(objectMaterialsExtended,ID).y > EPSILON)
+				color += reflection(origin,direction,t,ID);
+
+			gl_FragColor += color;
+
+		}else{
+			gl_FragColor += vec4(0.0,0.0,0.4,1.0);
+		}
 
 	} else {
 
