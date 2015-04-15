@@ -1,34 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<script type="text/javascript" src="js/dat.gui.min.js"></script>
+  	<script type="text/javascript" src="js/webgl-obj-loader/webgl-obj-loader.js"></script>
+  	<script type="text/javascript" src="js/ray-tracing.js"></script>
+  	<script id="shader-vs" type="x-shader/x-vertex" src="js/vertexShader.js"></script>
+  	<script id="shader-fs" type="x-shader/x-fragment" src="js/fragmentShader.js"></script>
+  	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body bgcolor="#000000">
   <input id="loadObjbutton" type="file" style="visibility:hidden" />
-  <script type="text/javascript" src="js/dat.gui.min.js"></script>
+  <div style="z-index:-1; text-align:center; width:100%; height:100%;">
+  	<canvas id="canvas" style="border: none;"></canvas>
+  </div>
   <script type="text/javascript">
+  	//global obj
+  	var canvas;
+
+	//set up load file button
 	document.getElementById('loadObjbutton').addEventListener('change', handleFileSelect, false);
 	function handleFileSelect(evt) {
-    	var ObjFile = evt.target.files[0]; //select 1st file
-    	//TODO: check it is obj file
-    	//TODO: load obj file
-    	//TODO: convert into cloud-points
-    	//TODO: initialize rendering
+    	var inputFile = evt.target.files[0]; 
+    	//check if it is obj file
+    	if(inputFile.name.indexOf(".obj") > -1){
+    		var reader = new FileReader();
+    		//load obj file
+		    reader.onload = function(){
+		      var objStr = reader.result;
+		      var mesh = new OBJ.Mesh(objStr);
+		      
+
+		      alert(mesh.vertices);
+		      alert(mesh.textures);
+		      alert(mesh.indices);
+		      //TODO: convert into cloud-points and feed into scene
+		      //TODO: initialize rendering
+		    };
+		    reader.readAsText(inputFile);
+    	} 
     }
-    
+
+	//set up control pannel
     var controlPanel = function() {
 	  this.adjustWidth = 5.0;
 	  this.adjustHeight = 5.0;
 	  this.loadFile = function() {document.getElementById('loadObjbutton').click()};
 	};
 
-	window.onload = function() {
+  	//page initialization
+  	window.onload = function() {
 	  var controler = new controlPanel();
 	  var gui = new dat.GUI();
 	  gui.add(controler, 'adjustWidth', 0, 10).step(0.1);
 	  gui.add(controler, 'adjustHeight', 0, 10).step(0.1);
 	  gui.add(controler, 'loadFile').name('Load OBJ file');
+	  canvas = document.getElementById('canvas');
+	  initWebGL(canvas);
 	};
-	
   </script>
 </body>
 </html>
