@@ -1,25 +1,24 @@
 precision mediump float;
+uniform vec3 cameraPos;
 
 const vec3 lightDir = vec3(0.577350269, 0.577350269, -0.577350269);
 varying vec3 vPosition;
-uniform vec3 cameraPos;
 uniform vec3 sphere1Center;
 uniform vec3 sphere2Center;
 uniform vec3 sphere3Center;
 
-bool intersectSphere(vec3 center, vec3 lStart, vec3 lDir,
-                     out float dist) {
+bool intersectSphere(vec3 center, vec3 lStart, vec3 lDir, out float z) {
   vec3 c = center - lStart;
   float b = dot(lDir, c);
   float d = b*b - dot(c, c) + 1.0;
   if (d < 0.0) {
-    dist = 10000.0;
+    z = 10000.0;
     return false;
   }
 
-  dist = b - sqrt(d);
-  if (dist < 0.0) {
-    dist = 10000.0;
+  z = b - sqrt(d);
+  if (z < 0.0) {
+    z = 10000.0;
     return false;
   }
 
@@ -39,15 +38,16 @@ vec3 lightAt(vec3 N, vec3 V, vec3 color) {
   return c * color;
 }
 
-bool intersectWorld(vec3 lStart, vec3 lDir, out vec3 pos,
-                    out vec3 normal, out vec3 color) {
+bool intersectWorld(vec3 lStart, vec3 lDir, out vec3 pos, out vec3 normal, out vec3 color) {
   float d1, d2, d3;
   bool h1, h2, h3;
 
+  //TODO:modify to a iteration amount all object in the world
   h1 = intersectSphere(sphere1Center, lStart, lDir, d1);
   h2 = intersectSphere(sphere2Center, lStart, lDir, d2);
   h3 = intersectSphere(sphere3Center, lStart, lDir, d3);
 
+  
   if (h1 && d1 < d2 && d1 < d3) {
     pos = lStart + d1 * lDir;
     normal = pos - sphere1Center;
@@ -75,8 +75,7 @@ bool intersectWorld(vec3 lStart, vec3 lDir, out vec3 pos,
     else {
       color = vec3(0.0);
     }
-  }
-  else {
+  }else {
    return false;
   }
 
@@ -89,14 +88,16 @@ void main(void)
 
   vec3 p1, norm, p2;
   vec3 col, colT, colM, col3;
-  if (intersectWorld(cameraPos, cameraDir, p1,
-                     norm, colT)) {
+  if (intersectWorld(cameraPos, cameraDir, p1, norm, colT)) {
+
     col = lightAt(norm, -cameraDir, colT);
     colM = (colT + vec3(0.7)) / 1.7;
+
     cameraDir = reflect(cameraDir, norm);
     if (intersectWorld(p1, cameraDir, p2, norm, colT)) {
       col += lightAt(norm, -cameraDir, colT) * colM;
       colM *= (colT + vec3(0.7)) / 1.7;
+      
       cameraDir = reflect(cameraDir, norm);
       if (intersectWorld(p2, cameraDir, p1, norm, colT)) {
         col += lightAt(norm, -cameraDir, colT) * colM;

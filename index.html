@@ -1,62 +1,241 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<script type="text/javascript" src="js/dat.gui.min.js"></script>
-  	<script type="text/javascript" src="js/webgl-obj-loader/webgl-obj-loader.js"></script>
-  	<script type="text/javascript" src="js/ray-tracing.js"></script>
-  	<script id="shader-vs" type="x-shader/x-vertex" src="js/vertexShader.js"></script>
-  	<script id="shader-fs" type="x-shader/x-fragment" src="js/fragmentShader.js"></script>
-  	<link rel="stylesheet" type="text/css" href="css/style.css">
+<!-- CSS Styles -->
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<!-- GUI Libraries -->
+<script type="text/javascript" src="js/dat.gui.min.js"></script>
+<!-- MATH Libraries -->
+<script type='text/javascript' src='js/gl-matrix-min.js'></script>
+<!-- WEBGL Libraries -->
+<script type='text/javascript' src='js/webgl/Globals.js'></script>
+<script type='text/javascript' src='js/webgl/Utils.js'></script>
+<script type='text/javascript' src='js/webgl/Program.js'></script>
+<script type='text/javascript' src='js/webgl/Scene.js'></script>
+<script type='text/javascript' src='js/webgl/Camera.js'></script>
+<script type='text/javascript' src='js/webgl/CameraInteractor.js'></script>
+<script type='text/javascript' src='js/webgl/WebGLApp.js'></script>
+<!-- Object file loader -->
+<script type="text/javascript" src="js/webgl-obj-loader/webgl-obj-loader.js"></script>
+<!-- Shading Part (Main implementation)-->
+<script type="text/javascript" src="js/WebGLMain.js"></script>
+<script id="shader-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
+	attribute vec4 aVertexColor;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	uniform mat4 uNMatrix;
+	uniform bool uUpdateLight;
+	uniform vec3 uLightPosition; 
+	uniform vec4 uLightAmbient;  
+	uniform vec4 uLightDiffuse;  
+	uniform vec4 uMaterialDiffuse;
+	uniform bool uWireframe;
+	uniform bool uPerVertexColor;
+	 
+	varying vec4 vFinalColor;
+	 
+	void main(void) {
+	 
+	    if (uWireframe) {
+	        if (uPerVertexColor){
+	            vFinalColor = aVertexColor;
+	        }
+	        else{
+	            vFinalColor = uMaterialDiffuse;
+	        }
+	    }
+	    else{
+	        vec3 N = vec3(uNMatrix * vec4(aVertexNormal, 0.0));  // This is a vector w = 0;
+	        vec3 L = normalize(-uLightPosition);                 // Given a light position, use the inverse is the direction (to the center of the world)
+	        if(uUpdateLight){
+	            L = vec3(uNMatrix*vec4(L,0.0));   // vector light direction
+	        }
+	        
+	        float lambertTerm = dot(N,-L);
+	        if (lambertTerm == 0.0) lambertTerm = 0.01;
+	        vec4 Ia = uLightAmbient;
+	        vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
+	        vFinalColor = Ia + Id;
+	        vFinalColor.a = 1.0;
+	    }
+	    
+	    //Transformed vertex position
+	    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0); // vertex w=1
+	    
+	}
+</script>
+<script id="shader-fs" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+
+	varying vec4 vFinalColor;
+	void main(void){
+		gl_FragColor = vFinalColor;
+	}
+	/*
+	precision mediump float;
+	uniform vec3 cameraPos;
+
+	const vec3 lightDir = vec3(0.577350269, 0.577350269, -0.577350269);
+	varying vec3 vPosition;
+	uniform vec3 sphere1Center;
+	uniform vec3 sphere2Center;
+	uniform vec3 sphere3Center;
+
+	bool intersectSphere(vec3 center, vec3 lStart, vec3 lDir, out float z) {
+	  vec3 c = center - lStart;
+	  float b = dot(lDir, c);
+	  float d = b*b - dot(c, c) + 1.0;
+	  if (d < 0.0) {
+	    z = 10000.0;
+	    return false;
+	  }
+
+	  z = b - sqrt(d);
+	  if (z < 0.0) {
+	    z = 10000.0;
+	    return false;
+	  }
+
+	  return true;
+	}
+
+	vec3 lightAt(vec3 N, vec3 V, vec3 color) {
+	  vec3 L = lightDir;
+	  vec3 R = reflect(-L, N);
+
+	  float c = 0.3 + 0.4 * pow(max(dot(R, V), 0.0), 30.0) + 0.7 * dot(L, N);
+
+	  if (c > 1.0) {
+	    return mix(color, vec3(1.6, 1.6, 1.6), c - 1.0);
+	  }
+
+	  return c * color;
+	}
+
+	bool intersectWorld(vec3 lStart, vec3 lDir, out vec3 pos, out vec3 normal, out vec3 color) {
+	  float d1, d2, d3;
+	  bool h1, h2, h3;
+
+	  //TODO:modify to a iteration amount all object in the world
+	  h1 = intersectSphere(sphere1Center, lStart, lDir, d1);
+	  h2 = intersectSphere(sphere2Center, lStart, lDir, d2);
+	  h3 = intersectSphere(sphere3Center, lStart, lDir, d3);
+
+	  
+	  if (h1 && d1 < d2 && d1 < d3) {
+	    pos = lStart + d1 * lDir;
+	    normal = pos - sphere1Center;
+	    color = vec3(0.0, 0.0, 0.9);
+	  }
+	  else if (h2 && d2 < d3) {
+	    pos = lStart + d2 * lDir;
+	    normal = pos - sphere2Center;
+	    color = vec3(0.9, 0.0, 0.0);
+	  }
+	  else if (h3) {
+	    pos = lStart + d3 * lDir;
+	    normal = pos - sphere3Center;
+	    color = vec3(0.0, 0.9, 0.0);
+	  }
+	  else if (lDir.y < -0.01) {
+	    pos = lStart + ((lStart.y + 2.7) / -lDir.y) * lDir;
+	    if (pos.x*pos.x + pos.z*pos.z > 30.0) {
+	      return false;
+	    }
+	    normal = vec3(0.0, 1.0, 0.0);
+	    if (fract(pos.x / 5.0) > 0.5 == fract(pos.z / 5.0) > 0.5) {
+	      color = vec3(1.0);
+	    }
+	    else {
+	      color = vec3(0.0);
+	    }
+	  }else {
+	   return false;
+	  }
+
+	  return true;
+	}
+
+	void main(void)
+	{
+	  vec3 cameraDir = normalize(vPosition - cameraPos);
+
+	  vec3 p1, norm, p2;
+	  vec3 col, colT, colM, col3;
+	  if (intersectWorld(cameraPos, cameraDir, p1, norm, colT)) {
+
+	    col = lightAt(norm, -cameraDir, colT);
+	    colM = (colT + vec3(0.7)) / 1.7;
+
+	    cameraDir = reflect(cameraDir, norm);
+	    if (intersectWorld(p1, cameraDir, p2, norm, colT)) {
+	      col += lightAt(norm, -cameraDir, colT) * colM;
+	      colM *= (colT + vec3(0.7)) / 1.7;
+	      
+	      cameraDir = reflect(cameraDir, norm);
+	      if (intersectWorld(p2, cameraDir, p1, norm, colT)) {
+	        col += lightAt(norm, -cameraDir, colT) * colM;
+	      }
+	    }
+
+	    gl_FragColor = vec4(col, 1.0);
+	  }
+	  else {
+	    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+	  }
+	}*/
+</script>
 </head>
 <body bgcolor="#000000">
   <input id="loadObjbutton" type="file" style="visibility:hidden" />
   <div style="z-index:-1; text-align:center; width:100%; height:100%;">
   	<canvas id="canvas" style="border: none;"></canvas>
   </div>
-  <script type="text/javascript">
-  	//global obj
-  	var canvas;
-
+<script type="text/javascript">
 	//set up load file button
 	document.getElementById('loadObjbutton').addEventListener('change', handleFileSelect, false);
 	function handleFileSelect(evt) {
-    	var inputFile = evt.target.files[0]; 
-    	//check if it is obj file
-    	if(inputFile.name.indexOf(".obj") > -1){
-    		var reader = new FileReader();
-    		//load obj file
+		var inputFile = evt.target.files[0]; 
+		//check if it is obj file
+		if(inputFile.name.indexOf(".obj") > -1){
+			var reader = new FileReader();
+			//load obj file
 		    reader.onload = function(){
 		      var objStr = reader.result;
-		      var mesh = new OBJ.Mesh(objStr);
+		      var o = new OBJ.Mesh(objStr);
+		      Scene.addObject(o);
+		      drawScene(); //refresh
 		      
-
-		      alert(mesh.vertices);
-		      alert(mesh.textures);
-		      alert(mesh.indices);
 		      //TODO: convert into cloud-points and feed into scene
 		      //TODO: initialize rendering
 		    };
 		    reader.readAsText(inputFile);
-    	} 
-    }
+		} 
+	}
 
 	//set up control pannel
-    var controlPanel = function() {
+	var controlPanel = function() {
 	  this.adjustWidth = 5.0;
 	  this.adjustHeight = 5.0;
 	  this.loadFile = function() {document.getElementById('loadObjbutton').click()};
 	};
 
-  	//page initialization
-  	window.onload = function() {
+	//page initialization
+	window.onload = function() {
 	  var controler = new controlPanel();
 	  var gui = new dat.GUI();
 	  gui.add(controler, 'adjustWidth', 0, 10).step(0.1);
 	  gui.add(controler, 'adjustHeight', 0, 10).step(0.1);
 	  gui.add(controler, 'loadFile').name('Load OBJ file');
-	  canvas = document.getElementById('canvas');
-	  initWebGL(canvas);
+	  //get init object
+	  theObject = new OBJ.Mesh("res/teapot.obj");
+	  webGLStart("canvas");
 	};
-  </script>
+</script>
+
 </body>
 </html>
