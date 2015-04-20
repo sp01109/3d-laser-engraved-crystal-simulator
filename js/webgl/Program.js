@@ -44,63 +44,91 @@ var Program = {
     */
     load : function() {
 
-     var fragmentShader          = Program.getShader(gl, "shader-fs");
-     var vertexShader            = Program.getShader(gl, "shader-vs");
-     
-     prg = gl.createProgram();
-     gl.attachShader(prg, vertexShader);
-     gl.attachShader(prg, fragmentShader);
-     
-     
-     //---------------------------------------------------
-     // UPDATE:
-     // March 31th 2014: make sure that the location 0 is always assigned
-     // to the vertex position attribute. 
-     //---------------------------------------------------
-     /*
-     Always have vertex attrib 0 array enabled. 
-     If you draw with vertex attrib 0 array disabled, 
-     you will force the browser to do complicated emulation 
-     when running on desktop OpenGL (e.g. on Mac OSX). 
-     
-     This is because in desktop OpenGL, nothing gets drawn if vertex attrib 0 is not 
-     array-enabled. You can use bindAttribLocation() to force a vertex attribute 
-     to use location 0, and use enableVertexAttribArray() to make it array-enabled.
-     
-     taken from https://developer.mozilla.org/en-US/docs/Web/WebGL/WebGL_best_practices
+    var fragmentShader          = Program.getShader(gl, "shader-fs");
+    var vertexShader            = Program.getShader(gl, "shader-vs");
+
+    prg = gl.createProgram();
+    gl.attachShader(prg, vertexShader);
+    gl.attachShader(prg, fragmentShader);
+
+
+    //---------------------------------------------------
+    // UPDATE:
+    // March 31th 2014: make sure that the location 0 is always assigned
+    // to the vertex position attribute. 
+    //---------------------------------------------------
+    /*
+    Always have vertex attrib 0 array enabled. 
+    If you draw with vertex attrib 0 array disabled, 
+    you will force the browser to do complicated emulation 
+    when running on desktop OpenGL (e.g. on Mac OSX). 
+
+    This is because in desktop OpenGL, nothing gets drawn if vertex attrib 0 is not 
+    array-enabled. You can use bindAttribLocation() to force a vertex attribute 
+    to use location 0, and use enableVertexAttribArray() to make it array-enabled.
+
+    taken from https://developer.mozilla.org/en-US/docs/Web/WebGL/WebGL_best_practices
     */
-     
-     gl.bindAttribLocation(prg, 0 , "aVertexPosition");
-     //---------------------------------------------------// 
-     gl.linkProgram(prg);
 
-     if (!gl.getProgramParameter(prg, gl.LINK_STATUS)) {
-      alert("Could not initialise shaders");
-     }
+    gl.bindAttribLocation(prg, 0 , "aVertexPosition");
+    //---------------------------------------------------// 
+    gl.linkProgram(prg);
 
-     gl.useProgram(prg);
+    if (!gl.getProgramParameter(prg, gl.LINK_STATUS)) {
+        alert("Could not initialise shaders");
+    }
+
+    gl.useProgram(prg);
+
+    prg.aVertexPosition  = gl.getAttribLocation(prg, "aVertexPosition");
+    var vertices = [ //full size in NDC
+         1.0,  1.0,
+        -1.0,  1.0,
+         1.0, -1.0,
+        -1.0, -1.0
+    ];
+    var vertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    //---------------------------------------------------// 
+    gl.enableVertexAttribArray(prg.aVertexPosition);
+    //---------------------------------------------------//
+    gl.vertexAttribPointer(prg.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+
+    prg.aPlotPosition  = gl.getAttribLocation(prg, "aPlotPosition");
+    //prg.aVertexNormal    = gl.getAttribLocation(prg, "aVertexNormal");
+    //prg.aVertexColor     = gl.getAttribLocation(prg, "aVertexColor");
+    //prg.uPMatrix         = gl.getUniformLocation(prg, "uPMatrix");
+    //prg.uMVMatrix        = gl.getUniformLocation(prg, "uMVMatrix");
+    //prg.uNMatrix         = gl.getUniformLocation(prg, "uNMatrix");
+
+    //prg.uMaterialDiffuse  = gl.getUniformLocation(prg, "uMaterialDiffuse");
+    prg.uLightAmbient     = gl.getUniformLocation(prg, "uLightAmbient");
+    prg.uLightDiffuse     = gl.getUniformLocation(prg, "uLightDiffuse");
+    prg.uLightPosition    = gl.getUniformLocation(prg, "uLightPosition");
+    //prg.uUpdateLight      = gl.getUniformLocation(prg, "uUpdateLight");
+    //prg.uWireframe        = gl.getUniformLocation(prg, "uWireframe");
+    //prg.uPerVertexColor   = gl.getUniformLocation(prg, "uPerVertexColor");
+
+
+    gl.uniform3fv(prg.uLightPosition,    [0, 120, 120]);
+    gl.uniform4fv(prg.uLightAmbient,      [0.20,0.20,0.20,1.0]);
+    gl.uniform4fv(prg.uLightDiffuse,      [1.0,1.0,1.0,1.0]); 
+    },
+
+    setAttributeLocations: function (attrList){
+        for(var i=0, max = attrList.length; i <max; i+=1){
+            this[attrList[i]] = gl.getAttribLocation(prg, attrList[i]);
+        }
+    },
     
-     prg.aVertexPosition  = gl.getAttribLocation(prg, "aVertexPosition");
-     //---------------------------------------------------// 
-     gl.enableVertexAttribArray(prg.aVertexPosition);
-     //---------------------------------------------------//
-     prg.aVertexNormal    = gl.getAttribLocation(prg, "aVertexNormal");
-     prg.aVertexColor     = gl.getAttribLocation(prg, "aVertexColor");
-     prg.uPMatrix         = gl.getUniformLocation(prg, "uPMatrix");
-     prg.uMVMatrix        = gl.getUniformLocation(prg, "uMVMatrix");
-     prg.uNMatrix         = gl.getUniformLocation(prg, "uNMatrix");
-     
-     prg.uMaterialDiffuse  = gl.getUniformLocation(prg, "uMaterialDiffuse");
-     prg.uLightAmbient     = gl.getUniformLocation(prg, "uLightAmbient");
-     prg.uLightDiffuse     = gl.getUniformLocation(prg, "uLightDiffuse");
-     prg.uLightPosition    = gl.getUniformLocation(prg, "uLightPosition");
-     prg.uUpdateLight      = gl.getUniformLocation(prg, "uUpdateLight");
-     prg.uWireframe        = gl.getUniformLocation(prg, "uWireframe");
-     prg.uPerVertexColor   = gl.getUniformLocation(prg, "uPerVertexColor");
+    setUniformLocations: function (uniformList){
+        for(var i=0, max = uniformList.length; i < max; i +=1){
+            this[uniformList[i]] = gl.getUniformLocation(prg, uniformList[i]);
+        }
+    },
 
-
-     gl.uniform3fv(prg.uLightPosition,    [0, 120, 120]);
-     gl.uniform4fv(prg.uLightAmbient,      [0.20,0.20,0.20,1.0]);
-     gl.uniform4fv(prg.uLightDiffuse,      [1.0,1.0,1.0,1.0]); 
+    getUniform: function (uniformLocation){
+        return gl.getUniform(prg, uniformLocation);
     }
 };

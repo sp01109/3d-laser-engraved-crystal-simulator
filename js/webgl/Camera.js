@@ -17,11 +17,12 @@ function Camera(t){
     this.type       = t;
     this.steps      = 0;
 
+    this.fovy       = 30;
     this.up_plane   = vec3.create();
     this.r_plane    = vec3.create();
-    this.c_plane    = 0.0; //center of view plane
-    this.l_plane    = 0.0; //left bottum of the view plane
-    this.fovy       = 30;
+    this.c_plane    = vec3.create(); //center of view plane
+    this.l_plane    = vec3.create(); //left bottum of the view plane
+    this.cornersVertexBuffer = gl.createBuffer();
 
     this.hookRenderer = null;
     this.hookGUIUpdate = null;
@@ -178,18 +179,16 @@ Camera.prototype.update = function(){
 }
 
 Camera.prototype.getViewPlane = function() {
-    var up_lf = this.getViewPlanePixel(0, 0);
-    var up_rt = this.getViewPlanePixel(c_width, 0);
-    var bt_lf = this.getViewPlanePixel(0, c_height);
-    var bt_rt = this.getViewPlanePixel(c_width, c_height);
+    var tp_lf = this.getViewPlanePixel(0, 0);
+    var tp_rt = this.getViewPlanePixel(c_width*resolution, 0);
+    var bt_lf = this.getViewPlanePixel(0, c_height*resolution);
+    var bt_rt = this.getViewPlanePixel(c_width*resolution, c_height*resolution);
 
-    var corners = [];
-    coners.concat(up_lf,[1.0],
-                  up_rt,[1.0],
-                  bt_lf,[1.0],
-                  bt_rt,[1.0]);
-    
-    return coners;  
+    var corners = [tp_lf[0], tp_lf[1], tp_lf[2],
+                   tp_rt[0], tp_rt[1], tp_rt[2],
+                   bt_rt[0], bt_rt[1], bt_rt[2],
+                   bt_lf[0], bt_lf[1], bt_lf[2]];
+    return corners;  
 };
 
 Camera.prototype.getViewPlanePixel = function(i, j) {

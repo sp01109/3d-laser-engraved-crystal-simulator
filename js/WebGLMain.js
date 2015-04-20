@@ -32,7 +32,7 @@ function configure(){
     
     //Update lights for this example
     gl.uniform4fv(prg.uLightAmbient,      [0.1,0.1,0.1,1.0]);
-    gl.uniform3fv(prg.uLightPosition,    [0, 0, 100]);
+    gl.uniform3fv(prg.uLightPosition,     [0, 0, 100]);
     gl.uniform4fv(prg.uLightDiffuse,      [0.7,0.7,0.7,1.0]);
     
     //init gui with camera settings
@@ -53,10 +53,6 @@ function initTransforms(){
     mat4.identity(pMatrix);
     
     //Initialize Normal matrix
-    //mat4.identity(nMatrix);
-    //mat4.set(mvMatrix, nMatrix);
-    //mat4.inverse(nMatrix);
-    //mat4.transpose(nMatrix);
     mat4.invert(nMatrix, mvMatrix);
     mat4.transpose(nMatrix, nMatrix);
  }
@@ -81,7 +77,21 @@ function drawScene()
 
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	gl.viewport(0, 0, app.canvas.width, app.canvas.height);
+    var corners = camera.getViewPlane();
 
+    gl.enableVertexAttribArray(prg.aPlotPosition);
+    gl.disableVertexAttribArray(prg.aVertexPosition);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, camera.cornersVertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(corners), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(prg.aPlotPosition);
+    gl.vertexAttribPointer(prg.aPlotPosition, 3, gl.FLOAT, false, 0, 0);
+
+    gl.enableVertexAttribArray(prg.aVertexPosition);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    /*
 	try{
 		//Model-View matrix mode setup camera->world
         //mat4.perspective(fovy, app.canvas.width / app.canvas.height, 10, 5000.0, pMatrix);
@@ -128,14 +138,13 @@ function drawScene()
                 gl.drawElements(gl.TRIANGLES, object.indices.length, gl.UNSIGNED_SHORT,0);
             }
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-            
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);  
         }
     }
     catch(err){
         alert(err);
         console.error(err.description);
-    }	
+    }*/
 }
 
 /**

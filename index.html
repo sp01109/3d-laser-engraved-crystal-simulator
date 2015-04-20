@@ -21,6 +21,17 @@
 <script type="text/javascript" src="js/WebGLMain.js"></script>
 <script id="shader-vs" type="x-shader/x-vertex">
 	attribute vec3 aVertexPosition;
+	attribute vec3 aPlotPosition;
+
+	varying vec3 pixelPosition;  
+
+	void main(void){
+		gl_Position = vec4(aVertexPosition, 1.0);
+		pixelPosition = aPlotPosition; 
+	}
+
+	/*
+	attribute vec3 aVertexPosition;
 	attribute vec3 aVertexNormal;
 	attribute vec4 aVertexColor;
 	uniform mat4 uMVMatrix;
@@ -64,16 +75,21 @@
 	    //Transformed vertex position
 	    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0); // vertex w=1
 	    
-	}
+	}*/
 </script>
 <script id="shader-fs" type="x-shader/x-fragment">
 	#ifdef GL_ES
 		precision highp float;
 	#endif
 
-	varying vec4 vFinalColor;
+	uniform vec3 uLightPosition; 
+	uniform vec4 uLightAmbient;  
+	uniform vec4 uLightDiffuse;
+
+	varying vec3 pixelPosition; 
+	
 	void main(void){
-		gl_FragColor = vFinalColor;
+		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 	}
 	/*
 	precision mediump float;
