@@ -53,10 +53,12 @@ function initTransforms(){
     mat4.identity(pMatrix);
     
     //Initialize Normal matrix
-    mat4.identity(nMatrix);
-    mat4.set(mvMatrix, nMatrix);
-    mat4.inverse(nMatrix);
-    mat4.transpose(nMatrix);
+    //mat4.identity(nMatrix);
+    //mat4.set(mvMatrix, nMatrix);
+    //mat4.inverse(nMatrix);
+    //mat4.transpose(nMatrix);
+    mat4.invert(nMatrix, mvMatrix);
+    mat4.transpose(nMatrix, nMatrix);
  }
 
 /**
@@ -82,7 +84,8 @@ function drawScene()
 
 	try{
 		//Model-View matrix mode setup camera->world
-        mat4.perspective(fovy, app.canvas.width / app.canvas.height, 10, 5000.0, pMatrix);
+        //mat4.perspective(fovy, app.canvas.width / app.canvas.height, 10, 5000.0, pMatrix);
+        mat4.perspective(pMatrix, fovy* Math.PI/180, app.canvas.width / app.canvas.height, 10, 5000.0);
         setMatrixUniforms(); 
         var updateLightPosition = false;
         gl.uniform1i(prg.uUpdateLight, updateLightPosition);
@@ -145,7 +148,8 @@ function setMatrixUniforms(){
     
     gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);    //Maps the Perspective matrix to the uniform prg.uPMatrix
     
-    mat4.transpose(camera.matrix, nMatrix);               //Calculates the Normal matrix 
+    //mat4.transpose(camera.matrix, nMatrix);               //Calculates the Normal matrix 
+    mat4.transpose(nMatrix, camera.matrix);
     gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);    //Maps the Normal matrix to the uniform prg.uNMatrix
 }
 

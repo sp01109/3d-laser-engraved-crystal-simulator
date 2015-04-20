@@ -1,7 +1,7 @@
 /**
 *   Camera
 */
-
+var resolution = 10;
 var CAMERA_ORBIT_TYPE    = 1;
 var CAMERA_TRACKING_TYPE = 2;
 
@@ -16,7 +16,13 @@ function Camera(t){
     this.elevation  = 0.0;
     this.type       = t;
     this.steps      = 0;
-    
+
+    this.up_plane   = vec3.create();
+    this.r_plane    = vec3.create();
+    this.c_plane    = 0.0; //center of view plane
+    this.l_plane    = 0.0; //left bottum of the view plane
+    this.fovy       = 30;
+
     this.hookRenderer = null;
     this.hookGUIUpdate = null;
 }
@@ -51,7 +57,8 @@ Camera.prototype.dolly = function(s){
     
     var step = s - c.steps;
     
-    vec3.normalize(c.normal,n);
+    //vec3.normalize(c.normal,n);
+    vec3.normalize(n, c.normal);
     
     var newPosition = vec3.create();
     
@@ -71,12 +78,20 @@ Camera.prototype.dolly = function(s){
 }
 
 Camera.prototype.setPosition = function(p){
-    vec3.set(p, this.position);
+    //vec3.set(p, this.position);
+    this.position = vec3.clone(p);
     this.update();
 }
 
 Camera.prototype.setAzimuth = function(az){
     this.changeAzimuth(az - this.azimuth);
+}
+
+Camera.prototype.setFov = function(d) {
+    if((this.fovy < 120 && this.fovy>0) || (this.fovy >15 && this.fovy<0)){
+        this.fovy+=d;
+    }
+     this.update();   
 }
 
 Camera.prototype.changeAzimuth = function(az){
@@ -107,22 +122,37 @@ Camera.prototype.changeElevation = function(el){
 Camera.prototype.update = function(){
     if (this.type == CAMERA_TRACKING_TYPE){
         mat4.identity(this.matrix);
-        mat4.translate(this.matrix, this.position);
-        mat4.rotateY(this.matrix, this.azimuth * Math.PI/180);
-        mat4.rotateX(this.matrix, this.elevation * Math.PI/180);
+        mat4.translate(this.matrix, this.matrix, this.position);
+        mat4.rotateY(this.matrix, this.matrix, this.azimuth * Math.PI/180);
+        mat4.rotateX(this.matrix, this.matrix, this.elevation * Math.PI/180);
     }
     else {
         mat4.identity(this.matrix);
-        mat4.rotateY(this.matrix, this.azimuth * Math.PI/180);
-        mat4.rotateX(this.matrix, this.elevation * Math.PI/180);
-        mat4.translate(this.matrix, this.position);
+        mat4.rotateY(this.matrix, this.matrix, this.azimuth * Math.PI/180);
+        mat4.rotateX(this.matrix, this.matrix, this.elevation * Math.PI/180);
+        mat4.translate(this.matrix, this.matrix, this.position);
     }
 
     var m = this.matrix;
-    mat4.multiplyVec4(m, [1, 0, 0, 0], this.right);
-    mat4.multiplyVec4(m, [0, 1, 0, 0], this.up);
-    mat4.multiplyVec4(m, [0, 0, 1, 0], this.normal);
+    vec4.transformMat4(this.right,  [1, 0, 0, 0], m);
+    vec4.transformMat4(this.up,     [0, 1, 0, 0], m);
+    vec4.transformMat4(this.normal, [0, 0, 1, 0], m);
+    //mat4.multiplyVec4(m, [1, 0, 0, 0], this.right);
+    //mat4.multiplyVec4(m, [0, 1, 0, 0], this.up);
+    //mat4.multiplyVec4(m, [0, 0, 1, 0], this.normal);
     
+    //view plane's 3d info
+    this.r_plane = vec3.create(); //point to right
+    vec3.cross(this.r_plane, this.up, this.normal);
+    vec3.normalize(this.r_plane, this.r_plane);
+    this.up_plane = vec3.create(); //view_up of the plane
+    vec3.cross(this.up_plane, this.normal, this.r_plane);
+    vec3.normalize(this.up_plane, this.up_plane);
+
+    var d = 2*Math.tan(fovy/2)/c_height; //distance from camera to view plan
+    vec3.scaleAndAdd(this.c_plane, this.position, this.normal,  -d);
+    vec3.scaleAndAdd(this.l_plane, this.c_plane, this.r_plane,  -c_width/2);
+    vec3.scaleAndAdd(this.l_plane, this.l_plane, this.up_plane, -c_height/2);
     /**
     * We only update the position if we have a tracking camera.
     * For an orbiting camera we do not update the position. If
@@ -130,7 +160,8 @@ Camera.prototype.update = function(){
     * Why do you think we do not update the position?
     */
     if(this.type == CAMERA_TRACKING_TYPE){
-        mat4.multiplyVec4(m, [0, 0, 0, 1], this.position);
+        vec4.transformMat4(this.position, [0, 0, 0, 1], m);
+        //mat4.multiplyVec4(m, [0, 0, 0, 1], this.position);
     }
     
     //console.info('------------- update -------------');
@@ -146,9 +177,32 @@ Camera.prototype.update = function(){
     
 }
 
+Camera.prototype.getViewPlane = function() {
+    var up_lf = this.getViewPlanePixel(0, 0);
+    var up_rt = this.getViewPlanePixel(c_width, 0);
+    var bt_lf = this.getViewPlanePixel(0, c_height);
+    var bt_rt = this.getViewPlanePixel(c_width, c_height);
+
+    var corners = [];
+    coners.concat(up_lf,[1.0],
+                  up_rt,[1.0],
+                  bt_lf,[1.0],
+                  bt_rt,[1.0]);
+    
+    return coners;  
+};
+
+Camera.prototype.getViewPlanePixel = function(i, j) {
+    var pixel = vec3.create();
+    vec3.scaleAndAdd(pixel, this.l_plane, this.r_plane, i/resolution);
+    vec3.scaleAndAdd(pixel, pixel, this.up_plane, j/resolution);
+    return pixel;
+};
+
 Camera.prototype.getViewTransform = function(){
     var m = mat4.create();
-    mat4.inverse(this.matrix, m);
+    mat4.invert(m, this.matrix);
+    //mat4.inverse(this.matrix, m);
     return m;
 }
 

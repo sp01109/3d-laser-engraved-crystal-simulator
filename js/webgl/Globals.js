@@ -14,6 +14,7 @@ var position = [0,-2,-50];
 var rotation = [0,0,0];
 
 var fovy = 30;
+var resolution = 10;
 var coords = -1;
 
 var requestUpdate = false;
