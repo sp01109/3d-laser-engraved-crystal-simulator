@@ -42,29 +42,6 @@
 	 
 	varying vec4 vFinalColor;
 
-/*
-void main1(void) {
-
- //Transformed vertex position
- vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
- 
- //Transformed normal position
- vNormal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
-
- //Transformed light position
- vec4 light = uMVMatrix * vec4(uLightPosition,1.0);
-	
- //Light position
- vLightRay = vertex.xyz-light.xyz;
- 
- //Vector Eye
- vEyeVec = -vec3(vertex.xyz);
- 
- //Final vertex position
- gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
- 
-}
-*/
 	void main(void) {
 	 
 	    if (uWireframe) {
@@ -91,26 +68,22 @@ void main1(void) {
 	        vFinalColor = Ia + Id;
 	        */
 
-
-
-
-
 	        //Transformed vertex position
- vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
- 
- //Transformed normal position
- vNormal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
+			 vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
+			 
+			 //Transformed normal position
+			 vNormal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
 
- //Transformed light position
- vec4 light = uMVMatrix * vec4(uLightPosition,1.0);
-	
- //Light position
- vLightRay = vertex.xyz-light.xyz;
- 
- //Vector Eye
- vEyeVec = -vec3(vertex.xyz);
+			 //Transformed light position
+			 vec4 light = uMVMatrix * vec4(uLightPosition,1.0);
+				
+			 //Light position
+			 vLightRay = vertex.xyz-light.xyz;
+			 
+			 //Vector Eye
+			 vEyeVec = -vec3(vertex.xyz);
 
-gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+			gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 	        //vFinalColor = vec4(1.0,0.0,0.0,1.0);
 	        //vFinalColor.a = 1.0;
 	    }
@@ -118,8 +91,6 @@ gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 	    //Transformed vertex position
 	    //gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0); // vertex w=1
 
-
-	    
 	}
 </script>
 <script id="shader-fs" type="x-shader/x-fragment">
@@ -141,7 +112,9 @@ gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 	varying vec3 vEyeVec;
 
 	varying vec4 vFinalColor;
+
 	void main(void){
+
 		vec3 L = normalize(vLightRay);
 	    vec3 N = normalize(vNormal);
 
