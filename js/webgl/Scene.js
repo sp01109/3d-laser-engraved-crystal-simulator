@@ -41,6 +41,8 @@ var Scene = {
         if (object.perVertexColor   === undefined)    {   object.perVertexColor   = false;            }
         if (object.wireframe        === undefined)    {   object.wireframe        = false;            }
         if (object.diffuse          === undefined)    {   object.diffuse          = [1.0,1.0,1.0,1.0];}
+        if (object.ambient          === undefined)    {   object.ambient          = [1.0,1.0,1.0,1.0];}
+        if (object.specular          === undefined)    {   object.specular          = [1.0,1.0,1.0,1.0];}
     
         var vertexBufferObject = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObject);

@@ -27,15 +27,44 @@
 	uniform mat4 uPMatrix;
 	uniform mat4 uNMatrix;
 	uniform bool uUpdateLight;
-	uniform vec3 uLightPosition; 
+
 	uniform vec4 uLightAmbient;  
-	uniform vec4 uLightDiffuse;  
+	uniform vec4 uLightDiffuse;
 	uniform vec4 uMaterialDiffuse;
 	uniform bool uWireframe;
 	uniform bool uPerVertexColor;
+
+	uniform vec3 uLightPosition; 
+
+	varying vec3 vNormal;
+	varying vec3 vLightRay;
+	varying vec3 vEyeVec;
 	 
 	varying vec4 vFinalColor;
-	 
+
+/*
+void main1(void) {
+
+ //Transformed vertex position
+ vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
+ 
+ //Transformed normal position
+ vNormal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
+
+ //Transformed light position
+ vec4 light = uMVMatrix * vec4(uLightPosition,1.0);
+	
+ //Light position
+ vLightRay = vertex.xyz-light.xyz;
+ 
+ //Vector Eye
+ vEyeVec = -vec3(vertex.xyz);
+ 
+ //Final vertex position
+ gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+ 
+}
+*/
 	void main(void) {
 	 
 	    if (uWireframe) {
@@ -47,6 +76,8 @@
 	        }
 	    }
 	    else{
+	    	vLightRay = vec3(1.0,1.0,1.0);
+	    	/*
 	        vec3 N = vec3(uNMatrix * vec4(aVertexNormal, 0.0));  // This is a vector w = 0;
 	        vec3 L = normalize(-uLightPosition);                 // Given a light position, use the inverse is the direction (to the center of the world)
 	        if(uUpdateLight){
@@ -58,11 +89,36 @@
 	        vec4 Ia = uLightAmbient;
 	        vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
 	        vFinalColor = Ia + Id;
-	        vFinalColor.a = 1.0;
+	        */
+
+
+
+
+
+	        //Transformed vertex position
+ vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
+ 
+ //Transformed normal position
+ vNormal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
+
+ //Transformed light position
+ vec4 light = uMVMatrix * vec4(uLightPosition,1.0);
+	
+ //Light position
+ vLightRay = vertex.xyz-light.xyz;
+ 
+ //Vector Eye
+ vEyeVec = -vec3(vertex.xyz);
+
+gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+	        //vFinalColor = vec4(1.0,0.0,0.0,1.0);
+	        //vFinalColor.a = 1.0;
 	    }
 	    
 	    //Transformed vertex position
-	    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0); // vertex w=1
+	    //gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0); // vertex w=1
+
+
 	    
 	}
 </script>
@@ -71,123 +127,53 @@
 		precision highp float;
 	#endif
 
+	uniform vec4 uLightAmbient;
+	uniform vec4 uLightDiffuse;
+	uniform vec4 uLightSpecular;
+
+	uniform vec4 uMaterialAmbient;
+	uniform vec4 uMaterialDiffuse;
+	uniform vec4 uMaterialSpecular;
+	uniform float uShininess;       
+
+	varying vec3 vNormal;
+	varying vec3 vLightRay;
+	varying vec3 vEyeVec;
+
 	varying vec4 vFinalColor;
 	void main(void){
-		gl_FragColor = vFinalColor;
-	}
-	/*
-	precision mediump float;
-	uniform vec3 cameraPos;
+		vec3 L = normalize(vLightRay);
+	    vec3 N = normalize(vNormal);
 
-	const vec3 lightDir = vec3(0.577350269, 0.577350269, -0.577350269);
-	varying vec3 vPosition;
-	uniform vec3 sphere1Center;
-	uniform vec3 sphere2Center;
-	uniform vec3 sphere3Center;
+	    //Lambert's cosine law
+	    float lambertTerm = dot(N,-L);
+	    
+	    //Ambient Term  
+	    vec4 Ia = uLightAmbient * uMaterialAmbient;
 
-	bool intersectSphere(vec3 center, vec3 lStart, vec3 lDir, out float z) {
-	  vec3 c = center - lStart;
-	  float b = dot(lDir, c);
-	  float d = b*b - dot(c, c) + 1.0;
-	  if (d < 0.0) {
-	    z = 10000.0;
-	    return false;
-	  }
+	    //Diffuse Term
+	    vec4 Id = vec4(0.0,0.0,0.0,1.0);
 
-	  z = b - sqrt(d);
-	  if (z < 0.0) {
-	    z = 10000.0;
-	    return false;
-	  }
+	    //Specular Term
+	    vec4 Is = vec4(0.0,0.0,0.0,1.0);
 
-	  return true;
-	}
-
-	vec3 lightAt(vec3 N, vec3 V, vec3 color) {
-	  vec3 L = lightDir;
-	  vec3 R = reflect(-L, N);
-
-	  float c = 0.3 + 0.4 * pow(max(dot(R, V), 0.0), 30.0) + 0.7 * dot(L, N);
-
-	  if (c > 1.0) {
-	    return mix(color, vec3(1.6, 1.6, 1.6), c - 1.0);
-	  }
-
-	  return c * color;
-	}
-
-	bool intersectWorld(vec3 lStart, vec3 lDir, out vec3 pos, out vec3 normal, out vec3 color) {
-	  float d1, d2, d3;
-	  bool h1, h2, h3;
-
-	  //TODO:modify to a iteration amount all object in the world
-	  h1 = intersectSphere(sphere1Center, lStart, lDir, d1);
-	  h2 = intersectSphere(sphere2Center, lStart, lDir, d2);
-	  h3 = intersectSphere(sphere3Center, lStart, lDir, d3);
-
-	  
-	  if (h1 && d1 < d2 && d1 < d3) {
-	    pos = lStart + d1 * lDir;
-	    normal = pos - sphere1Center;
-	    color = vec3(0.0, 0.0, 0.9);
-	  }
-	  else if (h2 && d2 < d3) {
-	    pos = lStart + d2 * lDir;
-	    normal = pos - sphere2Center;
-	    color = vec3(0.9, 0.0, 0.0);
-	  }
-	  else if (h3) {
-	    pos = lStart + d3 * lDir;
-	    normal = pos - sphere3Center;
-	    color = vec3(0.0, 0.9, 0.0);
-	  }
-	  else if (lDir.y < -0.01) {
-	    pos = lStart + ((lStart.y + 2.7) / -lDir.y) * lDir;
-	    if (pos.x*pos.x + pos.z*pos.z > 30.0) {
-	      return false;
-	    }
-	    normal = vec3(0.0, 1.0, 0.0);
-	    if (fract(pos.x / 5.0) > 0.5 == fract(pos.z / 5.0) > 0.5) {
-	      color = vec3(1.0);
-	    }
-	    else {
-	      color = vec3(0.0);
-	    }
-	  }else {
-	   return false;
-	  }
-
-	  return true;
-	}
-
-	void main(void)
-	{
-	  vec3 cameraDir = normalize(vPosition - cameraPos);
-
-	  vec3 p1, norm, p2;
-	  vec3 col, colT, colM, col3;
-	  if (intersectWorld(cameraPos, cameraDir, p1, norm, colT)) {
-
-	    col = lightAt(norm, -cameraDir, colT);
-	    colM = (colT + vec3(0.7)) / 1.7;
-
-	    cameraDir = reflect(cameraDir, norm);
-	    if (intersectWorld(p1, cameraDir, p2, norm, colT)) {
-	      col += lightAt(norm, -cameraDir, colT) * colM;
-	      colM *= (colT + vec3(0.7)) / 1.7;
-	      
-	      cameraDir = reflect(cameraDir, norm);
-	      if (intersectWorld(p2, cameraDir, p1, norm, colT)) {
-	        col += lightAt(norm, -cameraDir, colT) * colM;
-	      }
+	    if(lambertTerm > 0.0)
+	    {
+	        Id = uLightDiffuse * uMaterialDiffuse * lambertTerm; 
+	        vec3 E = normalize(vEyeVec);
+	        vec3 R = reflect(L, N);
+	        float specular = pow( max(dot(R, E), 0.0), uShininess);
+	        Is = uLightSpecular * uMaterialSpecular * specular;
 	    }
 
-	    gl_FragColor = vec4(col, 1.0);
-	  }
-	  else {
-	    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-	  }
-	}*/
+	    vec4 finalColor = Ia + Id + Is;
+	    finalColor.a = 1.0;
+
+   		gl_FragColor = finalColor;
+
+	}
+
+
 </script>
 </head>
 <body bgcolor="#000000">

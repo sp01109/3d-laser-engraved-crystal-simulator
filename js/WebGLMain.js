@@ -5,6 +5,8 @@ var app = null;
 function webGLStart(canvasId){
 	//init webgl context
 	app = new WebGLApp(canvasId);
+    initLights();
+
     app.configureGLHook = configure;
     app.loadSceneHook   = load;
     app.drawSceneHook   = drawScene;
@@ -32,7 +34,7 @@ function configure(){
     
     //Update lights for this example
     gl.uniform4fv(prg.uLightAmbient,      [0.1,0.1,0.1,1.0]);
-    gl.uniform3fv(prg.uLightPosition,    [0, 0, 100]);
+    gl.uniform3fv(prg.uLightPosition,    [0, 200, 0]);
     gl.uniform4fv(prg.uLightDiffuse,      [0.7,0.7,0.7,1.0]);
     
     //init gui with camera settings
@@ -40,6 +42,25 @@ function configure(){
     
     //init transforms
     initTransforms();
+}
+
+
+function initLights(){
+//Light uniforms
+gl.uniform3fv(prg.uLightPosition,[4.5,3.0,15.0]);        
+gl.uniform4f(prg.uLightAmbient ,1.0,1.0,1.0,1.0);
+gl.uniform4f(prg.uLightDiffuse,1.0,1.0,1.0,1.0);
+gl.uniform4f(prg.uLightSpecular,1.0,1.0,1.0,1.0);
+
+//Object Uniforms
+gl.uniform4f(prg.uMaterialAmbient, 0.1,0.1,0.1,1.0);
+gl.uniform4f(prg.uMaterialDiffuse, 1.0,1.0,1.0,1.0);
+gl.uniform4f(prg.uMaterialSpecular, 1.0,1.0,1.0,1.0);
+// uLightSpeculargl.uniform4f(prg.uMaterialAmbient, 0.1,0.1,0.1,1.0);
+// gl.uniform4f(prg.uMaterialDiffuse,1.0,1.0,1.0,1.0);
+// gl.uniform4f(prg.uMaterialSpecular, 1.0,1.0,1.0,1.0);
+gl.uniform1f(prg.uShininess, 100.0);
+
 }
 
 /**
@@ -83,15 +104,27 @@ function drawScene()
 	try{
 		//Model-View matrix mode setup camera->world
         mat4.perspective(fovy, app.canvas.width / app.canvas.height, 10, 5000.0, pMatrix);
-        setMatrixUniforms(); 
+        setMatrixUniforms();
         var updateLightPosition = false;
         gl.uniform1i(prg.uUpdateLight, updateLightPosition);
         
         for (var i = 0; i < Scene.objects.length; i++){
             var object = Scene.objects[i];
 
+            if (object.alias == 'lightsource'){
+                var lightPos = gl.getUniform(prg, prg.uLightPosition);
+                mat4.translate(mvMatrix,lightPos);
+
+                
+            }
+
             //Setting uniforms
             gl.uniform4fv(prg.uMaterialDiffuse, object.diffuse);
+            gl.uniform4fv(prg.uMaterialAmbient, object.ambient);
+            gl.uniform4fv(prg.uMaterialSpecular, object.specular);
+
+
+
             gl.uniform1i(prg.uWireframe,object.wireframe);
             gl.uniform1i(prg.uPerVertexColor, object.perVertexColor);
             
@@ -115,6 +148,7 @@ function drawScene()
                 gl.vertexAttribPointer(prg.aVertexColor,4,gl.FLOAT, false, 0,0);
                 gl.enableVertexAttribArray(prg.aVertexColor);
             }
+
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
             
