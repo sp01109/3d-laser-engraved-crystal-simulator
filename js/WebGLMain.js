@@ -17,14 +17,14 @@ function webGLStart(canvasId){
 var camera = null;
 var interactor = null;
 function configure(){
-	gl.clearColor(0.0,0.0,0.0, 1.0);
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(100.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     
     //Creates and sets up the camera location
-    camera = new Camera(CAMERA_ORBIT_TYPE);
-    camera.goHome([0,0,20]);
+    camera = new Camera();
+    camera.goHome([0,20,0]);
     camera.hookRenderer = drawScene;
     
     //Creates and sets up the mouse and keyboard interactor
@@ -37,114 +37,14 @@ function configure(){
     
     //init gui with camera settings
     //initGUIWithCameraSettings();
-    
-    //init transforms
-    initTransforms();
 }
-
-/**
-*   Defines the initial values for the transformation matrices
-*/
-function initTransforms(){
-    //Initialize Model-View matrix
-    mvMatrix = camera.getViewTransform();
-    
-    //Initialize Perspective matrix
-    mat4.identity(pMatrix);
-    
-    //Initialize Normal matrix
-    mat4.invert(nMatrix, mvMatrix);
-    mat4.transpose(nMatrix, nMatrix);
- }
 
 /**
 * Loads the scene
 */
 function load(){
     //TODO: load stans and light
-    Scene.loadObject('res/cone.json','cone');
-}
-
-/**
-* Draw scene, will be called if any parameter is been changed
-*/
-function drawScene()
-{
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
-	gl.clearDepth(100.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	gl.viewport(0, 0, app.canvas.width, app.canvas.height);
-    var corners = camera.getViewPlane();
-
-    gl.enableVertexAttribArray(prg.aPlotPosition);
-    gl.disableVertexAttribArray(prg.aVertexPosition);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, camera.cornersVertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(corners), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(prg.aPlotPosition);
-    gl.vertexAttribPointer(prg.aPlotPosition, 3, gl.FLOAT, false, 0, 0);
-
-    gl.enableVertexAttribArray(prg.aVertexPosition);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    /*
-	try{
-		//Model-View matrix mode setup camera->world
-        //mat4.perspective(fovy, app.canvas.width / app.canvas.height, 10, 5000.0, pMatrix);
-        mat4.perspective(pMatrix, fovy* Math.PI/180, app.canvas.width / app.canvas.height, 10, 5000.0);
-        setMatrixUniforms(); 
-        var updateLightPosition = false;
-        gl.uniform1i(prg.uUpdateLight, updateLightPosition);
-        
-        for (var i = 0; i < Scene.objects.length; i++){
-            var object = Scene.objects[i];
-
-            //Setting uniforms
-            gl.uniform4fv(prg.uMaterialDiffuse, object.diffuse);
-            gl.uniform1i(prg.uWireframe,object.wireframe);
-            gl.uniform1i(prg.uPerVertexColor, object.perVertexColor);
-            
-            //Setting attributes
-            gl.enableVertexAttribArray(prg.aVertexPosition);
-            gl.disableVertexAttribArray(prg.aVertexNormal);
-            gl.disableVertexAttribArray(prg.aVertexColor);
-            
-            gl.bindBuffer(gl.ARRAY_BUFFER, object.vbo);
-            gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(prg.aVertexPosition);
-            
-            if(!object.wireframe){
-                gl.bindBuffer(gl.ARRAY_BUFFER, object.nbo);
-                gl.vertexAttribPointer(prg.aVertexNormal, 3, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(prg.aVertexNormal);
-            }
-            
-            if (object.perVertexColor){
-                gl.bindBuffer(gl.ARRAY_BUFFER, object.cbo);
-                gl.vertexAttribPointer(prg.aVertexColor,4,gl.FLOAT, false, 0,0);
-                gl.enableVertexAttribArray(prg.aVertexColor);
-            }
-
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
-            
-            if (object.wireframe){
-                gl.drawElements(gl.LINES, object.indices.length, gl.UNSIGNED_SHORT,0);
-            }
-            else{
-                gl.drawElements(gl.TRIANGLES, object.indices.length, gl.UNSIGNED_SHORT,0);
-            }
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);  
-        }
-    }
-    catch(err){
-        alert(err);
-        console.error(err.description);
-    }*/
+    //Scene.loadObject('res/cone.json','cone');
 }
 
 /**
@@ -153,13 +53,94 @@ function drawScene()
 * Called once per rendering cycle. 
 */
 function setMatrixUniforms(){
-    gl.uniformMatrix4fv(prg.uMVMatrix, false, camera.getViewTransform()); //Maps the Model-View matrix to the uniform prg.uMVMatrix
+    /* camera */
+    gl.uniform3fv(prg.uCameraPosition, camera.position);
+
+    /* light */
+    gl.uniform3fv(prg.uLightPosition,   [0, 120, 120]);
+    gl.uniform4fv(prg.uLightAmbient,    [0.20,0.20,0.20,1.0]);
+    gl.uniform4fv(prg.uLightDiffuse,    [1.0,1.0,1.0,1.0]); 
+
+    /* objects */
+    var indices = [];
+    var vertices = [];
+    var vlength = 0
+    for (var i = 0; i < Scene.objects.length; i++) {
+        var o = Scene.objects[i];
+        //if more than one object, the indices have to be offset
+        if(vlength > 0){
+            for (var i = 0; i < o.indices.length; i++) {
+                o.indices[i] += vlength; 
+            }
+        }
+        indices = indices.concat(o.indices);
+        vertices = vertices.concat(o.vertices);
+        vlength += o.vertices.length; //used for offsetting next obj's indices
+        //console.info("obj "+i+"'s # vertices: "+ o.vertices.length/3 + ", # indices:" + o.indices.length/3);
+    }
+    gl.uniform1i(prg.uInticesNumber, indices.length/3);
+    gl.uniform1i(prg.uVerticesNumber, vertices.length/3);
+    //console.info("== total # vertices:"+ vertices.length/3 + ", # indices: " + indices.length/3 +" ==");
+
+    if(vertices.length > 0){
+        if (!gl.getExtension('OES_texture_float')) {
+            alert('no floating point texture support');
+            return;
+        }
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleVertices);
+        gl.uniform1i(prg.uTriangleVertices, 0);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, vertices.length/3, 1, 0, gl.RGB, gl.FLOAT, new Float32Array(vertices));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleIndices);
+        gl.uniform1i(prg.uTriangleIndices, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, indices.length/3, 1, 0, gl.RGB, gl.FLOAT, new Float32Array(indices));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+}
+
+/**
+* Draw scene, will be called if any parameter is been changed
+*/
+function drawScene()
+{
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clearDepth(1000.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	gl.viewport(0, 0, app.canvas.width, app.canvas.height);
     
-    gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);    //Maps the Perspective matrix to the uniform prg.uPMatrix
+    //set uniforms values (put light & obj info)
+    setMatrixUniforms();
+
+    //initialize plot vectices
+    gl.enableVertexAttribArray(prg.aPlotPosition);
+    gl.disableVertexAttribArray(prg.aVertexPosition);
     
-    //mat4.transpose(camera.matrix, nMatrix);               //Calculates the Normal matrix 
-    mat4.transpose(nMatrix, camera.matrix);
-    gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);    //Maps the Normal matrix to the uniform prg.uNMatrix
+    //set plot position in world space
+    var corners = camera.getViewPlane();
+    gl.bindBuffer(gl.ARRAY_BUFFER, camera.cornersVertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(corners), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(prg.aPlotPosition);
+    gl.vertexAttribPointer(prg.aPlotPosition, 3, gl.FLOAT, false, 0, 0);
+    
+    //enable vertex position which cover the whole NDC
+    gl.enableVertexAttribArray(prg.aVertexPosition);
+
+    //start drawing ray tracing
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
 /*
@@ -200,7 +181,7 @@ function resizeCanvas(w){
 	t -= 0.03;
 	drawScene();
 }
-
+/*
 var resizeTimer = false;
 function fullScreen() {
 	window.onresize = function() {
@@ -208,8 +189,7 @@ function fullScreen() {
 	    clearTimeout(resizeTimer);
 	  }
 	  resizeTimer = setTimeout(function() {
-	    fullScreen();
-	  }, 100);
+	    fullScreen();}, 100);
 	};
 
 	resizeCanvas(-1);

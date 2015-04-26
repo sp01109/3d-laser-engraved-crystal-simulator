@@ -37,7 +37,7 @@ var Scene = {
     },
     
     addObject : function(object) {
-        
+        /*
         if (object.perVertexColor   === undefined)    {   object.perVertexColor   = false;            }
         if (object.wireframe        === undefined)    {   object.wireframe        = false;            }
         if (object.diffuse          === undefined)    {   object.diffuse          = [1.0,1.0,1.0,1.0];}
@@ -73,7 +73,7 @@ var Scene = {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         gl.bindBuffer(gl.ARRAY_BUFFER,null);
-    
+        */
         Scene.objects.push(object);
         
         if (object.remote){

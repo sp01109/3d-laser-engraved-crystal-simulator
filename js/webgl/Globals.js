@@ -9,12 +9,4 @@ var pMatrix     = mat4.create();    // The projection matrix
 var nMatrix     = mat4.create();    // The normal matrix
 var cMatrix     = mat4.create();    // The camera matrix
 
-var home     = [0,-2,-50];
-var position = [0,-2,-50];
-var rotation = [0,0,0];
-
-var fovy = 30;
-var resolution = 10;
-var coords = -1;
-
 var requestUpdate = false;

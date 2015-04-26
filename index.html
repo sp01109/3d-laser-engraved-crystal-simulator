@@ -20,190 +20,197 @@
 <!-- Shading Part (Main implementation)-->
 <script type="text/javascript" src="js/WebGLMain.js"></script>
 <script id="shader-vs" type="x-shader/x-vertex">
-	attribute vec3 aVertexPosition;
+	attribute vec2 aVertexPosition;
 	attribute vec3 aPlotPosition;
 
-	varying vec3 pixelPosition;  
+	varying vec3 vPixelPosition;  
 
 	void main(void){
-		gl_Position = vec4(aVertexPosition, 1.0);
-		pixelPosition = aPlotPosition; 
+		gl_Position = vec4(aVertexPosition, 1.0, 1.0);
+		vPixelPosition = aPlotPosition; 
 	}
-
-	/*
-	attribute vec3 aVertexPosition;
-	attribute vec3 aVertexNormal;
-	attribute vec4 aVertexColor;
-	uniform mat4 uMVMatrix;
-	uniform mat4 uPMatrix;
-	uniform mat4 uNMatrix;
-	uniform bool uUpdateLight;
-	uniform vec3 uLightPosition; 
-	uniform vec4 uLightAmbient;  
-	uniform vec4 uLightDiffuse;  
-	uniform vec4 uMaterialDiffuse;
-	uniform bool uWireframe;
-	uniform bool uPerVertexColor;
-	 
-	varying vec4 vFinalColor;
-	 
-	void main(void) {
-	 
-	    if (uWireframe) {
-	        if (uPerVertexColor){
-	            vFinalColor = aVertexColor;
-	        }
-	        else{
-	            vFinalColor = uMaterialDiffuse;
-	        }
-	    }
-	    else{
-	        vec3 N = vec3(uNMatrix * vec4(aVertexNormal, 0.0));  // This is a vector w = 0;
-	        vec3 L = normalize(-uLightPosition);                 // Given a light position, use the inverse is the direction (to the center of the world)
-	        if(uUpdateLight){
-	            L = vec3(uNMatrix*vec4(L,0.0));   // vector light direction
-	        }
-	        
-	        float lambertTerm = dot(N,-L);
-	        if (lambertTerm == 0.0) lambertTerm = 0.01;
-	        vec4 Ia = uLightAmbient;
-	        vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
-	        vFinalColor = Ia + Id;
-	        vFinalColor.a = 1.0;
-	    }
-	    
-	    //Transformed vertex position
-	    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0); // vertex w=1
-	    
-	}*/
 </script>
 <script id="shader-fs" type="x-shader/x-fragment">
-	#ifdef GL_ES
-		precision highp float;
-	#endif
+	precision mediump float;
 
+	//camera position
+	uniform vec3 uCameraPosition;
+
+	//lights
 	uniform vec3 uLightPosition; 
 	uniform vec4 uLightAmbient;  
 	uniform vec4 uLightDiffuse;
+	const vec3 lightDir = vec3(0.0, 0.0, 4.0);
 
-	varying vec3 pixelPosition; 
-	
-	void main(void){
-		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+	//spheres
+    //uniform vec3 uSphereCenters[10];
+    uniform float uSphereRadius; //radius
+
+    //triangles/object
+    uniform int uVerticesNumber;
+    uniform int uInticesNumber;
+    uniform sampler2D uTriangleVertices;
+    uniform sampler2D uTriangleIndices;
+
+	//this pixel's position
+	varying vec3 vPixelPosition; 
+
+	bool intersectSphere(vec3 center, vec3 lightStart, vec3 rayDir, out float dist) {
+	    vec3 c = center - lightStart;
+	    float b = dot(rayDir, c);
+	    float d = b*b - dot(c, c) + 1.0;
+	    //float d = b*b - dot(c, c) + uSphereRadius*uSphereRadius;
+
+	    if (d < 0.0) {
+	      dist = 10000.0;
+	      return false;
+	    }
+
+	    dist = b - sqrt(d);
+	    if (dist < 0.0) {
+	      dist = 10000.0;
+	      return false;
+	    }
+
+	    return true;
 	}
-	/*
-	precision mediump float;
-	uniform vec3 cameraPos;
 
-	const vec3 lightDir = vec3(0.577350269, 0.577350269, -0.577350269);
-	varying vec3 vPosition;
-	uniform vec3 sphere1Center;
-	uniform vec3 sphere2Center;
-	uniform vec3 sphere3Center;
+	bool intersectTriangle(in vec3 A, in vec3 B, in vec3 C
+						 , in vec3 lightStart, in vec3 rayDir
+						 , out vec3 intersectPoint, out vec3 N){
+		intersectPoint = vec3(0.0, 0.0, 0.0);
+		vec3 u = B-A;
+		vec3 v = C-A;
+		N = cross(u, v);
+		
+		float a = -dot(N, lightStart-A);
+		float b = dot(N, rayDir);
 
-	bool intersectSphere(vec3 center, vec3 lStart, vec3 lDir, out float z) {
-	  vec3 c = center - lStart;
-	  float b = dot(lDir, c);
-	  float d = b*b - dot(c, c) + 1.0;
-	  if (d < 0.0) {
-	    z = 10000.0;
-	    return false;
-	  }
+		if(b == 0.0 || b<0.00000001) return false; //parralle
 
-	  z = b - sqrt(d);
-	  if (z < 0.0) {
-	    z = 10000.0;
-	    return false;
-	  }
+		// get intersect point of ray with triangle plane
+		float r = a/b;
+    	if (r < 0.0) return false;// ray goes away from triangle => no intersect
+    
+    	// for a segment, also test if (r > 1.0) => no intersect
+    	intersectPoint = lightStart + rayDir * r;
 
-	  return true;
+    	// is the point inside triangle ?
+    	float uu = dot(u,u);
+    	float uv = dot(u,v);
+    	float vv = dot(v,v);
+    	vec3 w = intersectPoint - A;
+    	float wu = dot(w,u);
+    	float wv = dot(w,v);
+    	float D = uv * uv - uu * vv;
+
+    	// get and test parametric coords
+    	float s = (uv * wv - vv * wu) / D;
+    	if (s < 0.0 || s > 1.0) return false; // I is outside T
+    	float t = (uv * wu - uu * wv) / D;
+    	if (t < 0.0 || (s + t) > 1.0) return false; // I is outside T
+   
+		return true; // I is in T
 	}
 
 	vec3 lightAt(vec3 N, vec3 V, vec3 color) {
-	  vec3 L = lightDir;
-	  vec3 R = reflect(-L, N);
+		vec3 L = lightDir;
+		vec3 R = reflect(-L, N);
 
-	  float c = 0.3 + 0.4 * pow(max(dot(R, V), 0.0), 30.0) + 0.7 * dot(L, N);
+		//ks, kd
+		float c = 0.3+ 0.4 * pow(max(dot(R, V), 0.0), 30.0) + 0.7 * dot(L, N);
 
-	  if (c > 1.0) {
-	    return mix(color, vec3(1.6, 1.6, 1.6), c - 1.0);
-	  }
-
-	  return c * color;
+		//if (c > 1.0) {
+		  //??? 1.6
+		  //return mix(color, vec3(1.6, 1.6, 1.6), c - 1.0);
+		//}
+		//add ka
+		return c * color;
 	}
 
-	bool intersectWorld(vec3 lStart, vec3 lDir, out vec3 pos, out vec3 normal, out vec3 color) {
-	  float d1, d2, d3;
-	  bool h1, h2, h3;
+	/**
+	* lightStart: light's start position (eg: camera's postion at beginning)
+	* rayDir:    vector of the ray from camera via pixel
+	* pos:       the surface's position in the world
+	* normal:    object surface's normal vector
+	* color:     the color on the object's surface
+	*/
+	bool intersectWorld(in vec3 lightStart, in vec3 rayDir, 
+                      	out vec3 pos, out vec3 normal, out vec3 color){
+		float closestDist = 10000.0;
+		vec3 uSphereCenters[1];
+		uSphereCenters[0] = vec3(0.0, 0.0, 0.0);
+		for (int i = 0; i < 1; i++) {
+			float newDist;
+			//TODO: take cube into consideration
+			if(intersectSphere(uSphereCenters[i], lightStart, rayDir, newDist)){
+				if(newDist < closestDist){
+					closestDist = newDist;
+					pos = lightStart + newDist * rayDir; //get the position in the world space
+			      	normal = pos - uSphereCenters[i]; //calculate normal of the surface
+			      	color = vec3(0.9, 0.9, 0.0); //the color of sphere is always white
+				}
+			}
+		}
 
-	  //TODO:modify to a iteration amount all object in the world
-	  h1 = intersectSphere(sphere1Center, lStart, lDir, d1);
-	  h2 = intersectSphere(sphere2Center, lStart, lDir, d2);
-	  h3 = intersectSphere(sphere3Center, lStart, lDir, d3);
+		float offset = float(1/3);
+		float iNum = float(uInticesNumber);
+		float vNum = float(uVerticesNumber);
+		for (int i=0; i<0; i++) {
+			//if(i >= uInticesNumber) break; //over
+			vec3 intersectPoint, tri_norm;
+			float cIndex = float(i)/iNum+offset; //add 1/3 to get correct index
+			vec3 index = texture2D(uTriangleIndices, vec2(cIndex, 0.5)).xyz;
+			//vec3 A = texture2D(uTriangleVertices, vec2(index.x/vNum+offset, 0.5)).xyz;
+			//vec3 B = texture2D(uTriangleVertices, vec2(index.y/vNum+offset, 0.5)).xyz;
+			//vec3 C = texture2D(uTriangleVertices, vec2(index.z/vNum+offset, 0.5)).xyz;
+			vec3 A =vec3(0.3,0,0); vec3 B =vec3(-0.3,0,0); vec3 C =vec3(0,0,0.3);
 
-	  
-	  if (h1 && d1 < d2 && d1 < d3) {
-	    pos = lStart + d1 * lDir;
-	    normal = pos - sphere1Center;
-	    color = vec3(0.0, 0.0, 0.9);
-	  }
-	  else if (h2 && d2 < d3) {
-	    pos = lStart + d2 * lDir;
-	    normal = pos - sphere2Center;
-	    color = vec3(0.9, 0.0, 0.0);
-	  }
-	  else if (h3) {
-	    pos = lStart + d3 * lDir;
-	    normal = pos - sphere3Center;
-	    color = vec3(0.0, 0.9, 0.0);
-	  }
-	  else if (lDir.y < -0.01) {
-	    pos = lStart + ((lStart.y + 2.7) / -lDir.y) * lDir;
-	    if (pos.x*pos.x + pos.z*pos.z > 30.0) {
-	      return false;
-	    }
-	    normal = vec3(0.0, 1.0, 0.0);
-	    if (fract(pos.x / 5.0) > 0.5 == fract(pos.z / 5.0) > 0.5) {
-	      color = vec3(1.0);
-	    }
-	    else {
-	      color = vec3(0.0);
-	    }
-	  }else {
-	   return false;
-	  }
 
-	  return true;
-	}
+			if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint, tri_norm)){
+				if(intersectPoint.z < closestDist){
+					closestDist = intersectPoint.z;
+					//TODO: add cloud points
+					pos = intersectPoint;
+					normal = tri_norm;
+					color = vec3(0.0, 0.9, 0.0); //the color of sphere is always white
+				}
+			}
+		}
 
-	void main(void)
-	{
-	  vec3 cameraDir = normalize(vPosition - cameraPos);
+		if(closestDist == 10000.0) return false;
 
-	  vec3 p1, norm, p2;
-	  vec3 col, colT, colM, col3;
-	  if (intersectWorld(cameraPos, cameraDir, p1, norm, colT)) {
+		return true;
+	} 
 
-	    col = lightAt(norm, -cameraDir, colT);
-	    colM = (colT + vec3(0.7)) / 1.7;
+	void main(void){
+		vec3 rayDir = normalize(vPixelPosition - uCameraPosition);
 
-	    cameraDir = reflect(cameraDir, norm);
-	    if (intersectWorld(p1, cameraDir, p2, norm, colT)) {
-	      col += lightAt(norm, -cameraDir, colT) * colM;
-	      colM *= (colT + vec3(0.7)) / 1.7;
-	      
-	      cameraDir = reflect(cameraDir, norm);
-	      if (intersectWorld(p2, cameraDir, p1, norm, colT)) {
-	        col += lightAt(norm, -cameraDir, colT) * colM;
+		vec3 pos, norm, color;
+		vec3 colorFinal;
+		vec3 colorObject, colorMirror;
+
+		if (intersectWorld(uCameraPosition, rayDir, pos, norm, colorObject)) {
+	      colorFinal = lightAt(norm, -rayDir, colorObject);
+	      colorMirror = (colorObject + vec3(0.7)) / 1.7; //TODO: tune it
+	      rayDir = reflect(rayDir, norm);
+	      //start light/ray reflection iteratively with limited times 
+	      for (int i = 0; i < 0; i++) {
+	      	if(intersectWorld(pos, rayDir, pos, norm, colorObject)){
+	      		colorFinal += lightAt(norm, -rayDir, colorObject) * colorMirror;
+	      		colorMirror *= (colorObject + vec3(0.7)) / 1.7; //TODO: tune it
+	      		rayDir = reflect(rayDir, norm);
+	      	}else{
+	      		break;
+	      	}
 	      }
+	      //colorFinal = vec3(0.0, 1.0, 1.0);
+	      gl_FragColor = vec4(colorFinal, 1.0);
+	    }else {
+	      discard;
+	      //gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); //background color
 	    }
-
-	    gl_FragColor = vec4(col, 1.0);
-	  }
-	  else {
-	    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-	  }
-	}*/
+	}
 </script>
 </head>
 <body bgcolor="#000000">
