@@ -85,9 +85,9 @@ Camera.prototype.changeElevation = function(el){
     var c = this;
     
     c.elevation +=el;
-    if(c.elevation > 180){ c.elevation = c.elevation%180 ;}
-    if(c.elevation < 0) { c.elevation = c.elevation%180 ;}
-    if((c.elevation)%180==0) c.elevation += 0.000001;
+    if(c.elevation > 180){ c.elevation = 179;}
+    if(c.elevation < 0) { c.elevation = 0;}
+    if((c.elevation)%90==0) c.elevation += 0.000001;
 
     c.update();
 }
