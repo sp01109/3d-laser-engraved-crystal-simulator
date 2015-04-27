@@ -45,7 +45,7 @@ Camera.prototype.dolly = function(s){
     var c = this;
     c.radius += s;
     if(c.radius > 100){ c.radius = 100;}
-    if(c.radius < 20) { c.radius = 20;}
+    if(c.radius < 10) { c.radius = 10;}
     this.update();
 }
 
@@ -100,7 +100,7 @@ Camera.prototype.update = function(){
     vec3.set(this.position, r*Math.sin(this.elevation*Math.PI/180)*Math.cos(this.azimuth*Math.PI/180)
                           , r*Math.sin(this.elevation*Math.PI/180)*Math.sin(this.azimuth*Math.PI/180)
                           , r*Math.cos(this.elevation*Math.PI/180));
-    
+
     //caculate right, up, normal
     vec3.subtract(this.normal, worldCenter, this.position);
     vec3.normalize(this.normal, this.normal); //get norm
@@ -115,7 +115,7 @@ Camera.prototype.update = function(){
     vec3.scaleAndAdd(this.c_plane, this.position, this.normal,  -d);
     vec3.scaleAndAdd(this.lb_plane, this.c_plane, this.right,  -1/2);
     vec3.scaleAndAdd(this.lb_plane, this.lb_plane, this.up, -1/2);
-    /*
+    
     console.info('------------- update -------------');
     console.info(" world center: "+ vec3.str(worldCenter));
     console.info(" dist to center: "+ r);
@@ -131,7 +131,7 @@ Camera.prototype.update = function(){
     console.info("c_plane: "+ vec3.str(this.c_plane));
     console.info("lb_plane: "+vec3.str(this.lb_plane));
     console.info(this.getViewPlane());
-    */
+    
     if(this.hookRenderer){
         this.hookRenderer();
     }
@@ -142,22 +142,18 @@ Camera.prototype.update = function(){
 }
 
 Camera.prototype.getViewPlane = function() {
-    //var tp_lf = this.getViewPlanePixel(0, 0);
-    //var tp_rt = this.getViewPlanePixel(c_width*resolution, 0);
-    //var bt_lf = this.getViewPlanePixel(0, c_height*resolution);
-    //var bt_rt = this.getViewPlanePixel(c_width*resolution, c_height*resolution);
-    var ratio = 1;
+    var ratio = 4;
     var tp_rt = vec3.create();
-    vec3.add(tp_rt, this.c_plane, this.up);
+    vec3.scaleAndAdd(tp_rt, this.c_plane, this.up, ratio);
     vec3.scaleAndAdd(tp_rt, tp_rt, this.right, ratio);
     var bt_rt = vec3.create();
-    vec3.subtract(bt_rt, this.c_plane, this.up);
+    vec3.scaleAndAdd(bt_rt, this.c_plane, this.up, -ratio);
     vec3.scaleAndAdd(bt_rt, bt_rt, this.right, ratio);
     var tp_lf = vec3.create();
-    vec3.add(tp_lf, this.c_plane, this.up);
+    vec3.scaleAndAdd(tp_lf, this.c_plane, this.up, ratio);
     vec3.scaleAndAdd(tp_lf, tp_lf, this.right, -ratio);
     var bt_lf = vec3.create();
-    vec3.subtract(bt_lf, this.c_plane, this.up);
+    vec3.scaleAndAdd(bt_lf, this.c_plane, this.up, -ratio);
     vec3.scaleAndAdd(bt_lf, bt_lf, this.right, -ratio);
 
     var corners = [tp_lf[0], tp_lf[1], tp_lf[2],
@@ -167,11 +163,3 @@ Camera.prototype.getViewPlane = function() {
     //console.info(corners);
     return corners;  
 }
-
-Camera.prototype.getViewPlanePixel = function(i, j) {
-    var pixel = vec3.create();
-    vec3.scaleAndAdd(pixel, this.lb_plane, this.right, i/resolution);
-    vec3.scaleAndAdd(pixel, pixel, this.up, j/resolution);
-    return pixel;
-}
-

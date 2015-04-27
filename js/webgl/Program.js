@@ -103,7 +103,6 @@ var Program = {
         prg.uLightDiffuse     = gl.getUniformLocation(prg, "uLightDiffuse");
         prg.uLightPosition    = gl.getUniformLocation(prg, "uLightPosition");
         prg.uSphereRadius     = gl.getUniformLocation(prg, "uSphereRadius");
-        prg.uSpheresCenter    = gl.getUniformLocation(prg, "uSphereCenters");
         prg.uInticesNumber    = gl.getUniformLocation(prg, "uInticesNumber");
         prg.uVerticesNumber   = gl.getUniformLocation(prg, "uVerticesNumber");
         prg.uTriangleVertices = gl.getUniformLocation(prg, "uTriangleVertices");
