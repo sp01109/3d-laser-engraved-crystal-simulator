@@ -249,6 +249,20 @@
 	      		break;
 	      	}
 	      }
+	      float n=1.0;//refraction index
+	      float cosI=-1.0*dot(norm,rayDir);
+	      float cosT2=1.0-n*n*(1.0-cosI*cosI);
+	      vec3 nextPos;
+	      vec3 refraColor;
+	      if(cosT2>0)
+	      {
+	      	vec3 T=(n*ratDir)+(n*cosI-sqrt(cosT2))*norm;
+	      	if(intersectWorld(pos, T, nextPos, norm, refraColor))
+	      	{
+	      		colorFinal += 0.5*refraColor;
+	      	}
+	      	
+	      }
 	      //colorFinal = vec3(0.0, 1.0, 1.0);
 	      gl_FragColor = vec4(colorFinal, 1.0);
 	    }else {
