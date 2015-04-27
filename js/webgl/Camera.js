@@ -100,7 +100,7 @@ Camera.prototype.update = function(){
     vec3.set(this.position, r*Math.sin(this.elevation*Math.PI/180)*Math.cos(this.azimuth*Math.PI/180)
                           , r*Math.sin(this.elevation*Math.PI/180)*Math.sin(this.azimuth*Math.PI/180)
                           , r*Math.cos(this.elevation*Math.PI/180));
-    console.error(this.elevation*Math.PI/180);
+    
     //caculate right, up, normal
     vec3.subtract(this.normal, worldCenter, this.position);
     vec3.normalize(this.normal, this.normal); //get norm
@@ -115,7 +115,7 @@ Camera.prototype.update = function(){
     vec3.scaleAndAdd(this.c_plane, this.position, this.normal,  -d);
     vec3.scaleAndAdd(this.lb_plane, this.c_plane, this.right,  -1/2);
     vec3.scaleAndAdd(this.lb_plane, this.lb_plane, this.up, -1/2);
-    
+    /*
     console.info('------------- update -------------');
     console.info(" world center: "+ vec3.str(worldCenter));
     console.info(" dist to center: "+ r);
@@ -131,7 +131,7 @@ Camera.prototype.update = function(){
     console.info("c_plane: "+ vec3.str(this.c_plane));
     console.info("lb_plane: "+vec3.str(this.lb_plane));
     console.info(this.getViewPlane());
-    
+    */
     if(this.hookRenderer){
         this.hookRenderer();
     }

@@ -110,7 +110,7 @@ var Program = {
         prg.uTriangleIndices  = gl.getUniformLocation(prg, "uTriangleIndices");
 
         //create memory to put vertices
-        prg.txTriangleVertices = gl.createTexture();
         prg.txTriangleIndices = gl.createTexture(); 
+        prg.txTriangleVertices = gl.createTexture();
     }
 };

@@ -44,7 +44,10 @@ function configure(){
 */
 function load(){
     //TODO: load stans and light
-    //Scene.loadObject('res/cone.json','cone');
+    var obj = {vertices:[],indices:[]};
+    obj.vertices = [0.0,0.0,0.3, -0.3,-0.3,0.0, 0.3,-0.3,0.0, 0.0,0.3,0.0];
+    obj.indices = [0,1,2, 1,0,3, 0,2,3, 2,1,3];
+    Scene.addObject(obj);
 }
 
 /**
@@ -64,19 +67,20 @@ function setMatrixUniforms(){
     /* objects */
     var indices = [];
     var vertices = [];
-    var vlength = 0
-    for (var i = 0; i < Scene.objects.length; i++) {
-        var o = Scene.objects[i];
+    var vlength = 0;
+    for (var k = 0; k < Scene.objects.length; k++) {
+        var o = Scene.objects[k];
         //if more than one object, the indices have to be offset
-        if(vlength > 0){
+        if(vlength == 0){
+            indices = indices.concat(o.indices);
+        }else{
             for (var i = 0; i < o.indices.length; i++) {
-                o.indices[i] += vlength; 
+                indices.push(o.indices[i]+vlength); 
             }
         }
-        indices = indices.concat(o.indices);
         vertices = vertices.concat(o.vertices);
-        vlength += o.vertices.length; //used for offsetting next obj's indices
-        //console.info("obj "+i+"'s # vertices: "+ o.vertices.length/3 + ", # indices:" + o.indices.length/3);
+        vlength += o.vertices.length/3; //used for offsetting next obj's indices
+        //console.info("obj "+k+"'s # vertices: "+ o.vertices.length/3 + ", # indices:" + o.indices.length/3);
     }
     gl.uniform1i(prg.uInticesNumber, indices.length/3);
     gl.uniform1i(prg.uVerticesNumber, vertices.length/3);
@@ -87,14 +91,6 @@ function setMatrixUniforms(){
             alert('no floating point texture support');
             return;
         }
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleVertices);
-        gl.uniform1i(prg.uTriangleVertices, 0);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, vertices.length/3, 1, 0, gl.RGB, gl.FLOAT, new Float32Array(vertices));
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleIndices);
@@ -104,7 +100,15 @@ function setMatrixUniforms(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleVertices);
+        gl.uniform1i(prg.uTriangleVertices, 0);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, vertices.length/3, 1, 0, gl.RGB, gl.FLOAT, new Float32Array(vertices));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     }
 }
 

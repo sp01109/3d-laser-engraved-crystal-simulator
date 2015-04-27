@@ -140,7 +140,7 @@
 		float closestDist = 10000.0;
 		vec3 uSphereCenters[1];
 		uSphereCenters[0] = vec3(0.0, 0.0, 0.0);
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 0; i++) {
 			float newDist;
 			//TODO: take cube into consideration
 			if(intersectSphere(uSphereCenters[i], lightStart, rayDir, newDist)){
@@ -153,63 +153,19 @@
 			}
 		}
 
-		float offset = float(1/3);
 		float iNum = float(uInticesNumber);
 		float vNum = float(uVerticesNumber);
-		vec3 intersectPoint, tri_norm;
+		float iOffset = 0.5/iNum;
+		float vOffset = 0.5/vNum;
 
-		vec3 A = vec3(0,0,0.3); vec3 B = vec3(-0.3,-0.3,0); vec3 C = vec3(0.3,-0.3,0);
-		if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint)){
-			if(intersectPoint.z < closestDist){
-				closestDist = intersectPoint.z;
-				//TODO: add cloud points
-				pos = intersectPoint;
-				//normal = tri_norm;
-				color = vec3(0.9, 0.0, 0.0); //the color of sphere is always white
-			}
-		}
-
-		B = vec3(0,0,0.3); A = vec3(-0.3,-0.3,0); C = vec3(0,0.3,0);
-		if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint)){
-			if(intersectPoint.z < closestDist){
-				closestDist = intersectPoint.z;
-				//TODO: add cloud points
-				pos = intersectPoint;
-				//normal = tri_norm;
-				color = vec3(0.0, 0.9, 0.0); //the color of sphere is always white
-			}
-		}
-
-		A = vec3(0,0,0.3); B = vec3(0.3,-0.3,0); C = vec3(0,0.3,0);
-		if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint)){
-			if(intersectPoint.z < closestDist){
-				closestDist = intersectPoint.z;
-				//TODO: add cloud points
-				pos = intersectPoint;
-				//normal = tri_norm;
-				color = vec3(0.0, 0.0, 0.9); //the color of sphere is always white
-			}
-		}
-
-		A = vec3(0.3,-0.3,0); B = vec3(-0.3,-0.3,0); C = vec3(0,0.3,0);
-		if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint)){
-			if(intersectPoint.z < closestDist){
-				closestDist = intersectPoint.z;
-				//TODO: add cloud points
-				pos = intersectPoint;
-				//normal = tri_norm;
-				color = vec3(0.9, 0.4, 0.9); //the color of sphere is always white
-			}
-		}
-
-		for (int i=0; i<0; i++) {
-			if(i >= uInticesNumber) break; //over
-			//vec3 intersectPoint, tri_norm;
-			float cIndex = float(i)/iNum+offset; //add 1/3 to get correct index
+		for (int i=0; i<2000000000; i++) {
+			if(i >= uInticesNumber) break; //over signal
+			vec3 intersectPoint, tri_norm;
+			float cIndex = float(i)/iNum+iOffset; //add 1/3 to get correct index
 			vec3 index = texture2D(uTriangleIndices, vec2(cIndex, 0.5)).xyz;
-			vec3 A = texture2D(uTriangleVertices, vec2(index.x/vNum+offset, 0.5)).xyz;
-			vec3 B = texture2D(uTriangleVertices, vec2(index.y/vNum+offset, 0.5)).xyz;
-			vec3 C = texture2D(uTriangleVertices, vec2(index.z/vNum+offset, 0.5)).xyz;
+			vec3 A = texture2D(uTriangleVertices, vec2(float(index.x)/vNum+vOffset, 0.5)).xyz;
+			vec3 B = texture2D(uTriangleVertices, vec2(float(index.y)/vNum+vOffset, 0.5)).xyz;
+			vec3 C = texture2D(uTriangleVertices, vec2(float(index.z)/vNum+vOffset, 0.5)).xyz;
 
 			if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint)){
 				if(intersectPoint.z < closestDist){
@@ -236,7 +192,7 @@
 
 		if (intersectWorld(uCameraPosition, rayDir, pos, norm, colorObject)) {
 	      colorFinal = colorObject;
-	      colorFinal = lightAt(norm, -rayDir, colorObject);
+	      //colorFinal = lightAt(norm, -rayDir, colorObject);
 	      colorMirror = (colorObject + vec3(0.7)) / 1.7; //TODO: tune it
 	      rayDir = reflect(rayDir, norm);
 	      //start light/ray reflection iteratively with limited times 
