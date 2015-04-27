@@ -47,7 +47,7 @@ function configure(){
 
 function initLights(){
 //Light uniforms
-gl.uniform3fv(prg.uLightPosition,[4.5,3.0,15.0]);        
+gl.uniform3fv(prg.uLightPosition,[4.5,3.0,15.0]);
 gl.uniform4f(prg.uLightAmbient ,1.0,1.0,1.0,1.0);
 gl.uniform4f(prg.uLightDiffuse,1.0,1.0,1.0,1.0);
 gl.uniform4f(prg.uLightSpecular,1.0,1.0,1.0,1.0);
@@ -85,7 +85,11 @@ function initTransforms(){
 */
 function load(){
     //TODO: load stans and light
-    Scene.loadObject('res/cone.json','cone');
+   
+    // var theObject = new OBJ.Mesh(trapezoidal_smooth5.obj);
+    // Scene.loadObject('res/cone.json','cone');
+    // Scene.addObject(theObject);
+
 }
 
 /**
@@ -166,7 +170,7 @@ function drawScene()
     catch(err){
         alert(err);
         console.error(err.description);
-    }	
+    }
 }
 
 /**

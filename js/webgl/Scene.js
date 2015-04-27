@@ -19,7 +19,7 @@ var Scene = {
                 }
                 else {
                     var o = JSON.parse(request.responseText);
-                    o.alias = (alias==null)?'none':alias;
+                    o.alias = (alias===null)?'none':alias;
                     o.remote = true;
                     Scene.addObject(o);
                 }
@@ -53,7 +53,7 @@ var Scene = {
         if (object.vertexNormals){
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(object.vertexNormals), gl.STATIC_DRAW);
         }else{
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(Utils.calculateNormals(object.vertices, object.indices)), gl.STATIC_DRAW);   
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(Utils.calculateNormals(object.vertices, object.indices)), gl.STATIC_DRAW);
         }
 
         var colorBufferObject;

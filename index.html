@@ -191,7 +191,24 @@
 	  gui.add(controler, 'adjustHeight', 0, 10).step(0.1);
 	  gui.add(controler, 'loadFile').name('Load OBJ file');
 	  //get init object
-	  theObject = new OBJ.Mesh("res/teapot.obj");
+      var filename="trapezoidal_smooth6.obj"
+	  var request = new XMLHttpRequest();
+        console.info('Requesting ' + filename);
+        request.open("GET",filename);
+    
+        request.onreadystatechange = function() {
+            if (request.readyState == 4) {
+                if(request.status == 404) {
+                    console.info(filename + ' does not exist');
+                }
+                else {
+                    var o = request.responseText;
+                    var theObject = new OBJ.Mesh(o);
+                    Scene.addObject(theObject);
+                }
+            }
+        };
+        request.send();
 	  webGLStart("canvas");
 	};
 </script>
