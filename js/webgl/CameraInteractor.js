@@ -41,8 +41,8 @@ CameraInteractor.prototype.onMouseMove = function(ev){
 	if (!this.dragging) return;
 	this.ctrl = ev.ctrlKey;
 	this.alt = ev.altKey;
-	var dx = this.x - this.lastX;
-	var dy = this.y - this.lastY;
+	var dx = (this.x - this.lastX)*0.5;
+	var dy = (this.y - this.lastY)*0.5;
 	
 	if (this.button == 0) { 
 		if(this.ctrl){
@@ -62,10 +62,10 @@ CameraInteractor.prototype.onKeyDown = function(ev){
 	
 	if (!this.ctrl){
 		if (this.key == 38){
-			c.changeElevation(-10);
+			c.changeElevation(10);
 		}
 		else if (this.key == 40){
-			c.changeElevation(10);
+			c.changeElevation(-10);
 		}
 		else if (this.key == 37){
 			c.changeAzimuth(-10);

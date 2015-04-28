@@ -11,7 +11,7 @@ function Camera(){
     this.position   = vec3.create();
     this.azimuth    = 1.0;
     this.elevation  = 1.0;
-    this.radius       = 20; 
+    this.radius     = 20; 
 
     this.fovy       = 30;
     this.c_plane    = vec3.create(); //center of view plane
@@ -51,7 +51,7 @@ Camera.prototype.dolly = function(s){
 
 Camera.prototype.setPosition = function(p){
     this.setAzimuth(Math.atan(p[1]/p[0])*180/Math.PI);
-    this.setElevation(Math.acos(p[2]/vec3.dist([0,0,0], p))*180/Math.PI);
+    this.setElevation(Math.acos(p[2]/vec3.length(p))*180/Math.PI);
     this.update();
 }
 
@@ -70,7 +70,7 @@ Camera.prototype.changeAzimuth = function(az){
     var c = this;
     c.azimuth +=az;
     if(c.azimuth > 360){ c.azimuth -= 360;}
-    if(c.azimuth < 0) { c.azimuth+=360;}
+    if(c.azimuth <= 0) { c.azimuth+=360;}
     if(c.azimuth == 0) c.azimuth = 1;
     if(c.azimuth % 180 == 0) c.azimuth += 0.000001;
 
@@ -85,8 +85,8 @@ Camera.prototype.changeElevation = function(el){
     var c = this;
     
     c.elevation +=el;
-    if(c.elevation > 180){ c.elevation = 179;}
-    if(c.elevation < 0) { c.elevation = 0;}
+    if(c.elevation >= 180){ c.elevation = 179.99999;}
+    if(c.elevation <= 0) { c.elevation = 0.000001;}
     if((c.elevation)%90==0) c.elevation += 0.000001;
 
     c.update();

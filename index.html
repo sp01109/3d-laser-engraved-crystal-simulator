@@ -40,10 +40,11 @@
 	uniform vec3 uLightPosition; 
 	uniform vec4 uLightAmbient;  
 	uniform vec4 uLightDiffuse;
-	const vec3 lightDir = vec3(0.0, 1.0, 0.0);
+	const vec3 lightDir = vec3(0.0, 0.0, 1.0);
 
 	//spheres
     uniform float uSphereRadius; //radius
+    uniform float uSphereDensity;
 
     //triangles/object
     uniform int uVerticesNumber;
@@ -75,11 +76,12 @@
 
 	bool intersectTriangle(in vec3 A, in vec3 B, in vec3 C
 						 , in vec3 lightStart, in vec3 rayDir
-						 , out vec3 intersectPoint){
+						 , out vec3 intersectPoint, out vec3 normal){
 		intersectPoint = vec3(0.0, 0.0, 0.0);
 		vec3 u = B-A;
 		vec3 v = C-A;
 		vec3 N = cross(u, v);
+		normal = normalize(N);
 		
 		float a = -dot(N, lightStart-A);
 		float b = dot(N, rayDir);
@@ -158,36 +160,64 @@
 
 		for (int i=0; i<2000000000; i++) {
 			if(i >= uInticesNumber) break; //over signal
-			vec3 intersectPoint;
+			vec3 intersectPoint, triNorm;
 			float newDist;
 			float cIndex = float(i)/iNum+iOffset; //add 1/3 to get correct index
 			vec3 index = texture2D(uTriangleIndices, vec2(cIndex, 0.5)).xyz;
+			float property = texture2D(uTriangleVertices, vec2(float(index.x)/vNum+vOffset, 0.5)).a;
 			vec3 A = texture2D(uTriangleVertices, vec2(float(index.x)/vNum+vOffset, 0.5)).xyz;
 			vec3 B = texture2D(uTriangleVertices, vec2(float(index.y)/vNum+vOffset, 0.5)).xyz;
 			vec3 C = texture2D(uTriangleVertices, vec2(float(index.z)/vNum+vOffset, 0.5)).xyz;
 
-			if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint)){
+			if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint, triNorm)){
 				if(intersectPoint.z < closestDist){
-					//check intersect with tiny circle
-					float density = 0.04;
-					for (float t = 0.0; t < 1.0; t+=0.04) {
-						float step = t/(density*4.0);
-						for (float ss = 0.0; ss < 2000000000.0; ss++) {
-							if(ss >= step) break;
-							float s;
-							if(step==0.0) s=0.0; else s = ss/step;
-							float a = 1.0-t;
-							float b = (1.0-s)*t;
-							float c = s*t;
-							vec3 center = a*A+b*B+c*C;
-							if(intersectSphere(center, lightStart, rayDir, newDist)){
-								closestDist = newDist;
-								pos = lightStart + newDist * rayDir;
-								normal = pos - center;
-								color = vec3(1.0, 1.0, 1.0); //the color of sphere is always white
-								return true;
+					if(property == 1.0){
+						//!!!!! cloud points !!!!!!!//
+						//check intersect with tiny circle
+						float freqency = 1.0;
+						float pi = 3.14159265359;
+						float cA = acos(dot((B-A),(C-A))/(length((B-A)*length(C-A)))); //corner A
+						float cB = acos(dot((C-B),(A-B))/(length((C-B)*length(A-B)))); //corner B
+						float cC = pi - cA - cB; //corner C
+						vec3 triVerts[3];
+						if(cA >cB && cA>cC){
+							triVerts[0]=A; triVerts[1]=B; triVerts[2]=C; //A as top
+							if(cA > pi*3.0/4.0) freqency = 4.0;
+						} else if(cB>cC){
+							triVerts[0]=B; triVerts[1]=C; triVerts[2]=A; //B as top
+							if(cB > pi*3.0/4.0) freqency = 4.0;
+						}else{
+							triVerts[0]=C; triVerts[1]=A; triVerts[2]=B; //C as top
+							if(cC > pi*3.0/4.0) freqency = 4.0;
+						}
+
+						for (float T = 0.0; T < 2000000000.0; T++) {
+							if(T > 1.0/uSphereDensity) break;
+							float t = T*uSphereDensity;
+							float step = t/(uSphereDensity*freqency);
+							for (float ss = 0.0; ss < 2000000000.0; ss++) {
+								if(ss >= step) break;
+								float s;
+								if(step==0.0) s=0.0; else s = ss/step;
+								float a = 1.0-t;
+								float b = (1.0-s)*t;
+								float c = s*t;
+								//get most biggest corner as top vertex
+								vec3 center =  a*triVerts[0]+b*triVerts[1]+c*triVerts[2];
+								if(intersectSphere(center, lightStart, rayDir, newDist)){
+									closestDist = newDist;
+									pos = lightStart + newDist * rayDir;
+									normal = pos - center;
+									color = vec3(1.0, 1.0, 1.0); //the color of sphere is always white
+									//return true;
+								}
 							}
 						}
+					} else {
+						closestDist = intersectPoint.z;
+						pos = intersectPoint;
+						normal = triNorm;
+						color = vec3(0.4, 0.2, 0.0); //the color of sphere is always white
 					}
 				}
 			}
@@ -206,7 +236,6 @@
 		vec3 colorObject, colorMirror;
 
 		if (intersectWorld(uCameraPosition, rayDir, pos, norm, colorObject)) {
-	      //colorFinal = colorObject;
 	      colorFinal = lightAt(norm, -rayDir, colorObject);
 	      colorMirror = (colorObject + vec3(0.7)) / 1.7; //TODO: tune it
 	      rayDir = reflect(rayDir, norm);
@@ -220,11 +249,9 @@
 	      		break;
 	      	}
 	      }
-	      //colorFinal = vec3(0.0, 1.0, 1.0);
 	      gl_FragColor = vec4(colorFinal, 1.0);
-	    }else {
-	      discard;
-	      //gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); //background color
+	    } else {
+	      discard; //background color
 	    }
 	}
 </script>
@@ -246,6 +273,7 @@
 		    reader.onload = function(){
 		      var objStr = reader.result;
 		      var o = new OBJ.Mesh(objStr);
+		      o.property = 1; //have to use cloud points
 		      Scene.addObject(o);
 		      drawScene(); //refresh screen
 		    };
@@ -257,7 +285,8 @@
 	controlPanel = function() {
 	  this.crystalWidth = 5.0;
 	  this.crystalHeight = 5.0;
-	  this.pointRadius = 0.05;
+	  this.pointRadius = 0.01;
+	  this.pointDensity = 40;
 	  this.loadFile = function() {document.getElementById('loadObjbutton').click()};
 	  this.clear = function() {
 	  	for(var i=0; i<Scene.objects.length; i++) Scene.objects.pop();
@@ -270,7 +299,8 @@
 	  controller = new controlPanel();
 	  var gui = new dat.GUI();
 	  var f1 = gui.addFolder('Object Properties');
-	  f1.add(controller, 'pointRadius', 0.0001, 0.08).name("Point Radius").step(0.002);
+	  f1.add(controller, 'pointRadius', 0.002, 0.02).name("Point Radius").step(0.002);
+	  f1.add(controller, 'pointDensity', 25, 50).name("Point Density").step(5);
 	  f1.open();
 	  var f2 = gui.addFolder('Crystal Properties');
 	  f2.add(controller, 'crystalWidth', 0, 10).name('Width').step(0.1);

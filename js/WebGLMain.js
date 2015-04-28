@@ -24,7 +24,7 @@ function configure(){
     
     //Creates and sets up the camera location
     camera = new Camera();
-    camera.goHome([0,20,0]);
+    camera.goHome([20,0,0]);
     camera.hookRenderer = drawScene;
     
     //Creates and sets up the mouse and keyboard interactor
@@ -44,9 +44,10 @@ function configure(){
 */
 function load(){
     //TODO: load stans and light
-    var obj = {vertices:[],indices:[]};
+    var obj = {};
     obj.vertices = [0.0,0.0,0.3, -0.3,-0.3,0.0, 0.3,-0.3,0.0, 0.0,0.3,0.0];
     obj.indices = [0,1,2, 1,0,3, 0,2,3, 2,1,3];
+    obj.property = 0; //don't need to use cloud points function
     //Scene.addObject(obj);
 }
 
@@ -66,6 +67,7 @@ function setMatrixUniforms(){
 
     /* tiny circles' radius */
     gl.uniform1f(prg.uSphereRadius, controller.pointRadius);
+    gl.uniform1f(prg.uSphereDensity, 1.0/controller.pointDensity);
 
     /* objects */
     if(Scene.objects.length != numObjectRecord){ //to avoid cpu overloading
@@ -83,12 +85,24 @@ function setMatrixUniforms(){
                     indices.push(o.indices[i]+vlength); 
                 }
             }
-            vertices = vertices.concat(o.vertices);
-            vlength += o.vertices.length/3; //used for offsetting next obj's indices
+
+            //vertice the forth elements used for property setting
+            for(var i=0; i<o.vertices.length; i+=3){
+                var rotateM = mat4.create();
+                mat4.rotateX(rotateM, rotateM, Math.PI/2);
+                var v = vec3.create();
+                vec3.set(v, o.vertices[i], o.vertices[i+1], o.vertices[i+2]);
+                vec3.transformMat4(v, v, rotateM);
+                vertices.push(v[0]);
+                vertices.push(v[1]);
+                vertices.push(v[2]);
+                vertices.push(o.property);
+            }
+            vlength += o.vertices.length/4; //used for offsetting next obj's indices
             //console.info("obj "+k+"'s # vertices: "+ o.vertices.length/3 + ", # indices:" + o.indices.length/3);
         }
         gl.uniform1i(prg.uInticesNumber, indices.length/3);
-        gl.uniform1i(prg.uVerticesNumber, vertices.length/3);
+        gl.uniform1i(prg.uVerticesNumber, vertices.length/4);
         //console.info("== total # vertices:"+ vertices.length/3 + ", # indices: " + indices.length/3 +" ==");
 
         if(vertices.length > 0){
@@ -109,7 +123,7 @@ function setMatrixUniforms(){
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleVertices);
             gl.uniform1i(prg.uTriangleVertices, 0);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, vertices.length/3, 1, 0, gl.RGB, gl.FLOAT, new Float32Array(vertices));
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, vertices.length/4, 1, 0, gl.RGBA, gl.FLOAT, new Float32Array(vertices));
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
