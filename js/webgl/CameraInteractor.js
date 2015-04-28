@@ -76,19 +76,17 @@ CameraInteractor.prototype.onKeyDown = function(ev){
 		}
         else if (this.key == 87) {  //w -wide
         	c.changeFov(5);
-            //if(fovy < 120) fovy+=5;
             console.info('camera.FovY:'+c.fovy);
         }
         else if (this.key == 83) { //s - narrow
         	c.changeFov(-5);
-            //if(fovy >15 ) fovy-=5;
             console.info('camera.FovY:'+c.fovy);
         }
         else if (this.key == 81) { //q - more closer
-        	this.translate(-5);
+        	this.translate(-10);
         }
         else if (this.key == 65) { //a - move farer
-        	this.translate(5);
+        	this.translate(10);
         }
 	}
      

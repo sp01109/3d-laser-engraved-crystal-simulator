@@ -24,7 +24,7 @@ function configure(){
     
     //Creates and sets up the camera location
     camera = new Camera();
-    camera.goHome([20,0,0]);
+    camera.goHome([200,0,0]);
     camera.hookRenderer = drawScene;
     
     //Creates and sets up the mouse and keyboard interactor
@@ -44,11 +44,11 @@ function configure(){
 */
 function load(){
     //TODO: load stans and light
-    var obj = {};
-    obj.vertices = [0.0,0.0,0.3, -0.3,-0.3,0.0, 0.3,-0.3,0.0, 0.0,0.3,0.0];
-    obj.indices = [0,1,2, 1,0,3, 0,2,3, 2,1,3];
-    obj.property = 0; //don't need to use cloud points function
-    //Scene.addObject(obj);
+    //var obj = {};
+    //obj.vertices = [0.0,0.0,0.3, -0.3,-0.3,0.0, 0.3,-0.3,0.0, 0.0,0.3,0.0];
+    //obj.indices = [0,1,2, 1,0,3, 0,2,3, 2,1,3];
+    //obj.property = PROPERTY_REGULAR; //don't need to use cloud points function
+    Scene.addObject(cube);
 }
 
 /**
@@ -56,7 +56,7 @@ function load(){
 *
 * Called once per rendering cycle. 
 */
-function setMatrixUniforms(){
+function setMatrixUniforms(update){
     /* camera */
     gl.uniform3fv(prg.uCameraPosition, camera.position);
 
@@ -70,8 +70,15 @@ function setMatrixUniforms(){
     gl.uniform1f(prg.uSphereDensity, 1.0/controller.pointDensity);
 
     /* objects */
-    if(Scene.objects.length != numObjectRecord){ //to avoid cpu overloading
+    if(update == true ||
+       Scene.objects.length     != numObjectRecord ||  //to avoid cpu overloading
+       controller.crystalLength != cubeLenRecord   ||
+       controller.crystalWidth  != cubeWidRecord   ||
+       controller.crystalHeight != cubeHigRecord ){ 
         numObjectRecord = Scene.objects.length;
+        cubeLenRecord   = controller.crystalLength;
+        cubeWidRecord   = controller.crystalWidth;
+        cubeHigRecord   = controller.crystalHeight;
         var indices = [];
         var vertices = [];
         var vlength = 0;
@@ -86,19 +93,47 @@ function setMatrixUniforms(){
                 }
             }
 
-            //vertice the forth elements used for property setting
+            //crystal cube scaling matrix
+            var adjestMatrix = mat4.create();
+            var scaleVector = vec3.create();
+            vec3.set(scaleVector, controller.crystalLength, controller.crystalWidth, controller.crystalHeight);
+            mat4.scale(adjestMatrix, adjestMatrix, scaleVector);
+
+            //input object rotation matrix
+            var rotateM = mat4.create();
+            mat4.rotateX(rotateM, rotateM, Math.PI/2);
+
+            //input object max/min len, wid, hig, used for adjesting cube size automatically
+            var objMax = [0,0,0];
+            var objMin = [0,0,0];
+
             for(var i=0; i<o.vertices.length; i+=3){
-                var rotateM = mat4.create();
-                mat4.rotateX(rotateM, rotateM, Math.PI/2);
                 var v = vec3.create();
                 vec3.set(v, o.vertices[i], o.vertices[i+1], o.vertices[i+2]);
-                vec3.transformMat4(v, v, rotateM);
+                if(o.property == PROPERTY_CRYSTAL){
+                    vec3.transformMat4(v, v, adjestMatrix);
+                }else if(o.property == PROPERTY_CLOUD_POINTS){
+                    vec3.transformMat4(v, v, rotateM);
+                    for(var a=0; a<3; a++){
+                        if(objMax[a] < v[a]) objMax[a] = v[a];
+                        if(objMin[a] > v[a]) objMin[a] = v[a];
+                    }
+                }
                 vertices.push(v[0]);
                 vertices.push(v[1]);
                 vertices.push(v[2]);
-                vertices.push(o.property);
+                vertices.push(o.property); //used 4th element for property
             }
-            vlength += o.vertices.length/4; //used for offsetting next obj's indices
+
+            //setup cube size automatically
+            if(o.property == PROPERTY_CLOUD_POINTS){
+                controller.crystalLength = Math.floor(objMax[0]-objMin[0])+3;
+                controller.crystalWidth  = Math.floor(objMax[1]-objMin[1])+3;
+                controller.crystalHeight = Math.floor(objMax[2]-objMin[2])+3;
+            }
+
+            //accumulate # total vertices for offsetting next obj's indices
+            vlength += o.vertices.length/4; 
             //console.info("obj "+k+"'s # vertices: "+ o.vertices.length/3 + ", # indices:" + o.indices.length/3);
         }
         gl.uniform1i(prg.uInticesNumber, indices.length/3);
@@ -135,7 +170,7 @@ function setMatrixUniforms(){
 /**
 * Draw scene, will be called if any parameter is been changed
 */
-function drawScene()
+function drawScene(update)
 {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clearDepth(1000.0);
@@ -146,7 +181,7 @@ function drawScene()
 	gl.viewport(0, 0, app.canvas.width, app.canvas.height);
     
     //set uniforms values (put light & obj info)
-    setMatrixUniforms();
+    setMatrixUniforms(update);
 
     //initialize plot vectices
     gl.enableVertexAttribArray(prg.aPlotPosition);

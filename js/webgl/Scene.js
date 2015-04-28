@@ -16,5 +16,12 @@ var Scene = {
          else {
             console.info(object.alias + ' has been added to the scene [Local]');
          }
+    },
+
+    clear : function() {
+        //keep cube
+        for(var i=1; i<Scene.objects.length; i++){
+            Scene.objects.pop();
+        }
     }
 };
