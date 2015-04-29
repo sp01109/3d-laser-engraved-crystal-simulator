@@ -1,0 +1,82 @@
+#finalResultImg{
+	width:640px;
+	height:450px;
+}
+
+#finalResultImg2{
+  height: 450px;
+}
+
+.menu_bar{
+	margin-bottom: -60px;
+	margin-left: 80px;
+	font-size: 1.25rem;
+	margin-top:50px;
+}
+
+.menu_item{
+	float:left;
+	margin-right: 60px;
+	cursor: pointer;
+	height:80px;
+}
+
+.menu_item:hover {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.menu_item a{
+	text-decoration: none;
+	color:#ffffff;
+}
+
+.cd-top.cd-is-visible {
+  /* the button becomes visible */
+  visibility: visible;
+  opacity: 1;
+}
+.cd-top.cd-fade-out {
+  /* if the user keeps scrolling down, the button is out of focus and becomes less visible */
+  opacity: .5;
+}
+
+.cd-top {
+  right: 20px;
+  bottom: 20px;
+}
+.cd-top {
+  display: inline-block;
+  height: 60px;
+  width: 60px;
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  text-indent: 100%;
+  white-space: nowrap;
+  background: #159957 url(../img/cd-top-arrow.svg) no-repeat center 50%;
+  visibility: hidden;
+  opacity: 0;
+  -webkit-transition: opacity .3s 0s, visibility 0s .3s;
+  -moz-transition: opacity .3s 0s, visibility 0s .3s;
+  transition: opacity .3s 0s, visibility 0s .3s;
+}
+
+a {
+  color: #159957;
+  text-decoration: none;
+}
+
+#basic_rt_img,#basic_rt_algorithm,#sim_point_cloud_img,#point_cloud_img,#basic_rt_opengl{
+  width:600px;
+  height:450px;
+}
+
+#point_cloud_method1,#point_cloud_method2,#rtMethodImg{
+  width: 600px;
+  height: 450px;
+}

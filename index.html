@@ -1,200 +1,127 @@
 <!DOCTYPE html>
-<html>
-<head>
-<!-- CSS Styles -->
-<link rel="stylesheet" type="text/css" href="css/style.css">
-<!-- GUI Libraries -->
-<script type="text/javascript" src="js/dat.gui.min.js"></script>
-<!-- MATH Libraries -->
-<script type='text/javascript' src='js/gl-matrix-min.js'></script>
-<!-- WEBGL Libraries -->
-<script type='text/javascript' src='js/webgl/Globals.js'></script>
-<script type='text/javascript' src='js/webgl/Utils.js'></script>
-<script type='text/javascript' src='js/webgl/Program.js'></script>
-<script type='text/javascript' src='js/webgl/Scene.js'></script>
-<script type='text/javascript' src='js/webgl/Camera.js'></script>
-<script type='text/javascript' src='js/webgl/CameraInteractor.js'></script>
-<script type='text/javascript' src='js/webgl/WebGLApp.js'></script>
-<!-- Object file loader -->
-<script type="text/javascript" src="js/webgl-obj-loader/webgl-obj-loader.js"></script>
-<!-- Shading Part (Main implementation)-->
-<script type="text/javascript" src="js/WebGLMain.js"></script>
-<script id="shader-vs" type="x-shader/x-vertex">
-	attribute vec3 aVertexPosition;
-	attribute vec3 aVertexNormal;
-	attribute vec4 aVertexColor;
-	uniform mat4 uMVMatrix;
-	uniform mat4 uPMatrix;
-	uniform mat4 uNMatrix;
-	uniform bool uUpdateLight;
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>3d-laser-engraved-crystal-simulator by Hedwig188</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/projPage.css">
+    <script src="js/backtotop/modernizr.js"></script>
+  </head>
+  <body>
 
-	uniform vec4 uLightAmbient;  
-	uniform vec4 uLightDiffuse;
-	uniform vec4 uMaterialDiffuse;
-	uniform bool uWireframe;
-	uniform bool uPerVertexColor;
-
-	uniform vec3 uLightPosition; 
-
-	varying vec3 vNormal;
-	varying vec3 vLightRay;
-	varying vec3 vEyeVec;
-	 
-	varying vec4 vFinalColor;
-
-	void main(void) {
-	 
-	    if (uWireframe) {
-	        if (uPerVertexColor){
-	            vFinalColor = aVertexColor;
-	        }
-	        else{
-	            vFinalColor = uMaterialDiffuse;
-	        }
-	    }
-	    else{
-	    	vLightRay = vec3(1.0,1.0,1.0);
-	    	/*
-	        vec3 N = vec3(uNMatrix * vec4(aVertexNormal, 0.0));  // This is a vector w = 0;
-	        vec3 L = normalize(-uLightPosition);                 // Given a light position, use the inverse is the direction (to the center of the world)
-	        if(uUpdateLight){
-	            L = vec3(uNMatrix*vec4(L,0.0));   // vector light direction
-	        }
-	        
-	        float lambertTerm = dot(N,-L);
-	        if (lambertTerm == 0.0) lambertTerm = 0.01;
-	        vec4 Ia = uLightAmbient;
-	        vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
-	        vFinalColor = Ia + Id;
-	        */
-
-	        //Transformed vertex position
-			 vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
-			 
-			 //Transformed normal position
-			 vNormal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
-
-			 //Transformed light position
-			 vec4 light = uMVMatrix * vec4(uLightPosition,1.0);
-				
-			 //Light position
-			 vLightRay = vertex.xyz-light.xyz;
-			 
-			 //Vector Eye
-			 vEyeVec = -vec3(vertex.xyz);
-
-			gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-	        //vFinalColor = vec4(1.0,0.0,0.0,1.0);
-	        //vFinalColor.a = 1.0;
-	    }
-	    
-	    //Transformed vertex position
-	    //gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0); // vertex w=1
-
-	}
-</script>
-<script id="shader-fs" type="x-shader/x-fragment">
-	#ifdef GL_ES
-		precision highp float;
-	#endif
-
-	uniform vec4 uLightAmbient;
-	uniform vec4 uLightDiffuse;
-	uniform vec4 uLightSpecular;
-
-	uniform vec4 uMaterialAmbient;
-	uniform vec4 uMaterialDiffuse;
-	uniform vec4 uMaterialSpecular;
-	uniform float uShininess;       
-
-	varying vec3 vNormal;
-	varying vec3 vLightRay;
-	varying vec3 vEyeVec;
-
-	varying vec4 vFinalColor;
-
-	void main(void){
-
-		vec3 L = normalize(vLightRay);
-	    vec3 N = normalize(vNormal);
-
-	    //Lambert's cosine law
-	    float lambertTerm = dot(N,-L);
-	    
-	    //Ambient Term  
-	    vec4 Ia = uLightAmbient * uMaterialAmbient;
-
-	    //Diffuse Term
-	    vec4 Id = vec4(0.0,0.0,0.0,1.0);
-
-	    //Specular Term
-	    vec4 Is = vec4(0.0,0.0,0.0,1.0);
-
-	    if(lambertTerm > 0.0)
-	    {
-	        Id = uLightDiffuse * uMaterialDiffuse * lambertTerm; 
-	        vec3 E = normalize(vEyeVec);
-	        vec3 R = reflect(L, N);
-	        float specular = pow( max(dot(R, E), 0.0), uShininess);
-	        Is = uLightSpecular * uMaterialSpecular * specular;
-	    }
-
-	    vec4 finalColor = Ia + Id + Is;
-	    finalColor.a = 1.0;
-
-   		gl_FragColor = finalColor;
-
-	}
+    <section class="page-header">
+      <h1 class="project-name">3d-laser-engraved-crystal-simulator</h1>
+      <h2 class="project-tagline">University of Southern California CSCI 580 Spring 2015</h2>
+      <h2 class="project-tagline">Team: Empire</h2>
+      <!-- <a href="https://github.com/Hedwig188/3d-laser-engraved-crystal-simulator" class="btn">View on GitHub</a>
+      <a href="https://github.com/Hedwig188/3d-laser-engraved-crystal-simulator/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/Hedwig188/3d-laser-engraved-crystal-simulator/tarball/master" class="btn">Download .tar.gz</a> -->
+      <div class="menu_bar">
+        <div class="menu_item" id="abstract"><a href="#abstract_title">Abstract</a></div>
+        <div class="menu_item" id="background"><a href="#motivation_title">Background</a></div>
+        <div class="menu_item" id="implementation"><a href="#algorithm_title">Implementation</a></div>
+        <div class="menu_item" id="result"><a href="#result_title">Result</a></div>
+        <div class="menu_item" id="team"><a href="#contact_title">Team</a></div>
+        <div class="menu_item" id="reference"><a href="#reference_title">Reference</a></div>
+      </div>
+    </section>
+    <section class="main-content">
+      <h3>
+<a id="abstract_title" class="anchor" href="#abstract_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Abstract</h3>
+<img id="finalResultImg2" src="img/expected2.png" alt="expected result"></img>
+<img id="finalResultImg" src="img/expected.png" alt="expected result"></img>
+</br>
+<p>Laser Etch is a popular and quick technology now. It is used in creating customized beautiful gifts. Therefore, a perfect simulation can not only give the customers a basic idea about how the final product will look like, but also promote the buying willingness of customers. 
+Our project focuses on creating a useful tool to perfectly simulate a 3D Laser Etch product. This tool will allow users to upload their desired 3D model and get its crystal laser etch simulation. In this project, we can learn how to transfer a triangle mesh 3D model into a point cloud and the ray-tracing caculation within a crystal material with an object inside.
+</p>
 
 
-</script>
-</head>
-<body bgcolor="#000000">
-  <input id="loadObjbutton" type="file" style="visibility:hidden" />
-  <div style="z-index:-1; text-align:center; width:100%; height:100%;">
-  	<canvas id="canvas" style="border: none;"></canvas>
-  </div>
-<script type="text/javascript">
-	//set up load file button
-	document.getElementById('loadObjbutton').addEventListener('change', handleFileSelect, false);
-	function handleFileSelect(evt) {
-		var inputFile = evt.target.files[0]; 
-		//check if it is obj file
-		if(inputFile.name.indexOf(".obj") > -1){
-			var reader = new FileReader();
-			//load obj file
-		    reader.onload = function(){
-		      var objStr = reader.result;
-		      var o = new OBJ.Mesh(objStr);
-		      Scene.addObject(o);
-		      drawScene(); //refresh
-		      
-		      //TODO: convert into cloud-points and feed into scene
-		      //TODO: initialize rendering
-		    };
-		    reader.readAsText(inputFile);
-		} 
-	}
+<h3>
+<a id="motivation_title" class="anchor" href="#motivation_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Background and Introduction</h3>
 
-	//set up control pannel
-	var controlPanel = function() {
-	  this.adjustWidth = 5.0;
-	  this.adjustHeight = 5.0;
-	  this.loadFile = function() {document.getElementById('loadObjbutton').click()};
-	};
+<p>In computer graphics, ray tracing is a technique for generating an image by tracing the path of light through pixels in an image plane and simulating the effects of its encounters with virtual objects. The technique is capable of producing a very high degree of visual realism, usually higher than that of typical scanline rendering methods, but at a greater computational cost. This makes ray tracing best suited for applications where the image can be rendered slowly ahead of time, such as in still images and film and television visual effects, and more poorly suited for real-time applications like video games where speed is critical. Ray tracing is capable of simulating a wide variety of optical effects, such as reflection and refraction, scattering, and dispersion phenomena (such as chromatic aberration)</p>
 
-	//page initialization
-	window.onload = function() {
-	  var controler = new controlPanel();
-	  var gui = new dat.GUI();
-	  gui.add(controler, 'adjustWidth', 0, 10).step(0.1);
-	  gui.add(controler, 'adjustHeight', 0, 10).step(0.1);
-	  gui.add(controler, 'loadFile').name('Load OBJ file');
-	  //get init object
-	  theObject = new OBJ.Mesh("res/teapot.obj");
-	  webGLStart("canvas");
-	};
-</script>
+<h3>
+<a id="algorithm_title" class="anchor" href="#algorithm_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Algorithm and Method</h3>
+<p>First, the triangle mesh 3D model will be decomposed into very fine geometry and be regarded as a point cloud. We will refer to inflating balloon model algorithm in this part. Second, this point cloud will be enclosed in a cube or any polyhedral created by WebGL library,which will become the crystal part. Third, the ray-tracing will be involved to render the whole object. In our project, we want to present a realistic rendering for our models, which combines the shading properties of reflection and refraction in the real world. Therefore, we will first calculate the shading coefficients of all the objects in the scene. Then, we cast rays through each pixel and test the intersection with some subset of all the objects in the scene. Once the ray hits the nearest object, we examine the material property of the object to decide whether to perform further shading algorithm. Reflection and refraction algorithm will be exploited if necessary. In the end, the control panel, animation, and ambient light may be included.
+</p>
+<h4> Algorithm flow chart</h4>
 
-</body>
+
+<img id="alg_img" src="img/algorithm.jpg" alt="algorithm"></img>
+
+
+<p>1. Implement basic ray tracing by using c++</p>
+
+<img id="basic_rt_opengl" src="img/ray_tracing_opengl.png" alt="basic ray tracing opengl"></img>
+<p>2. Simulate point cloud in matlab</p>
+
+<img id="sim_point_cloud_img" src="img/matlab_simulation.png" alt="point cloud matlab simulation"></img>
+<img id="point_cloud_method1" src="img/point_cloud_method1.png" alt="point_cloud_method1.png"></img>
+<img id="point_cloud_method2" src="img/point_cloud_method2.png" alt="point_cloud_method2.png"></img>
+
+<p>3. Implement ray tracing by using webgl</p>
+<img id="basic_rt_img" src="img/basic_ray_tracing.png" alt="basic ray tracing"></img>
+<p>4. Transform object to point cloud</p>
+<img id="point_cloud_img" src="img/point_cloud.png" alt="point cloud"></img>
+
+
+<h3>
+<a id="result_title" class="anchor" href="#result_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Result</h3>
+<h4> The render result without the cloud point
+<p> </p>
+<img id="ResultImg1" src="img/crystal1.jpg" alt="expected result"></img></br>
+<img id="ResultImg2" src="img/crystal2.jpg" alt="expected result"></img></br>
+<img id="ResultImg2" src="img/crystal3.jpg" alt="expected result"></img></br>
+<h4> The render result with cloud point
+<p> </p>
+<img id="ResultImg2" src="img/expected.png" alt="expected result"></img></br>
+
+<h3>
+<a id="contact_title" class="anchor" href="#contact_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Team</h3>
+
+<p>Chieh-I Chen&nbsp;&nbsp;(<a>chiehich@usc.edu</a>)</p>
+<p>Yudong Yang&nbsp;&nbsp;(<a>yudongya@usc.edu</a>)</p>
+<p>Chong Li&nbsp;&nbsp;(<a>chongli@usc.edu</a>)</p>
+<p>Yawei Huang&nbsp;&nbsp;(<a>yaweihua@usc.edu</a>)</p>
+
+<h3><a id="reference_title" class="anchor" href="#reference_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Reference</h3>    
+<p>Ray-tracing:</br>
+  • <a href="http://web.cse.ohio-state.edu/~hwshen/681/Site/Slides_files/basic_algo.pdf">http://web.cse.ohio-state.edu/~hwshen/681/Site/Slides_files/basic_algo.pdf</a></br>
+  • <a href="http://www.cs.utah.edu/~shirley/books/fcg2/rt.pdf">http://www.cs.utah.edu/~shirley/books/fcg2/rt.pdf</a></br>
+  • <a href="http://people.mozilla.org/~sicking/webgl/ray.html">http://people.mozilla.org/~sicking/webgl/ray.html</a></br>
+  • <a href="http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_1_Introduction.shtml">http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_1_Introduction.shtml</a></br>
+  • <a href="http://undernones.blogspot.com/2010/12/gpu-ray-tracing-with-glsl.html">http://undernones.blogspot.com/2010/12/gpu-ray-tracing-with-glsl.html</a></p>
+<p>Cloud Points:</br>
+  • GRAPHICS GEMS by ANDREW S. GLASSNER</p>
+<p>WebGL:</br>
+  • <a>WebGL Beginner's Guide by Diego Cantor Brandon Jones</a></br>
+  • <a href="https://github.com/frenchtoast747/webgl-obj-loader">https://github.com/frenchtoast747/webgl-obj-loader</a></br>
+  • <a href="http://math.hws.edu/eck/cs424/notes2013/19_GLSL.html">http://math.hws.edu/eck/cs424/notes2013/19_GLSL.html</a></br>
+  • <a href="https://msdn.microsoft.com/en-us/library/ie/dn302341(v=vs.85).aspx">https://msdn.microsoft.com/en-us/library/ie/dn302341(v=vs.85).aspx</a></p>
+<p>dat.Gui:</br>
+  • <a href="https://code.google.com/p/dat-gui/">https://code.google.com/p/dat-gui/</a><p>
+ <a href="https://github.com/sp01109/3d-laser-engraved-crystal-simulator">View on GitHub</a> 
+ 
+    </section>
+  <a href="#0" class="cd-top">Top</a>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="js/backtotop/main.js"></script> <!-- Gem jQuery -->
+            <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-60549024-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
 </html>
+
