@@ -187,13 +187,13 @@
 						vec3 triVerts[3];
 						if(cA >cB && cA>cC){
 							triVerts[0]=A; triVerts[1]=B; triVerts[2]=C; //A as top
-							if(cA > pi*3.0/4.0) freqency = 4.0;
+							if(cA > pi*3.0/4.0) freqency = cA;
 						} else if(cB>cC){
 							triVerts[0]=B; triVerts[1]=C; triVerts[2]=A; //B as top
-							if(cB > pi*3.0/4.0) freqency = 4.0;
+							if(cB > pi*3.0/4.0) freqency = cB;
 						}else{
 							triVerts[0]=C; triVerts[1]=A; triVerts[2]=B; //C as top
-							if(cC > pi*3.0/4.0) freqency = 4.0;
+							if(cC > pi*3.0/4.0) freqency = cC;
 						}
 
 						for (float T = 0.0; T < 2000000000.0; T++) {
