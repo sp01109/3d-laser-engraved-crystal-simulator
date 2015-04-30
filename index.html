@@ -57,7 +57,7 @@
     const int PROPERTY_REGULAR = 0;
 	const int PROPERTY_CLOUD_POINTS = 1;
 	const int PROPERTY_CRYSTAL = 2;
-	const float MIRROR_COEFF = 0.8;
+	const float MIRROR_COEFF = 0.12;
 	const float REFRECTION_COEFF = 0.9;
 	const float VIEW_DEPTH = 10000.0;
 	const float PI = 3.14159265359;
@@ -69,6 +69,7 @@
 	    vec3 c = center - lightStart;
 	    float b = dot(rayDir, c);
 	    float d = b*b - dot(c, c) + uSphereRadius*uSphereRadius;
+	    //float d = b*b - dot(c, c) + 1.0;
 
 	    if (d < 0.0) {
 	      dist = 10000.0;
@@ -133,16 +134,17 @@
 	bool intersectWorld(in vec3 lightStart, in vec3 rayDir, 
                       	out vec3 pos, out vec3 normal, out vec4 color){
 		float closestDist = 10000.0;
-		/*
+		
 		vec3 uSphereCenters[5];
 		uSphereCenters[0] = vec3(-1.5, 0.0, 2.0);
 		uSphereCenters[1] = vec3(1.5, 0.0, 2.0);
 		uSphereCenters[2] = vec3(0.0, 1.5, -2.0);
 		uSphereCenters[3] = vec3(0.0, -1.5, -2.0);
 		uSphereCenters[4] = vec3(0.0, 0.0, 0.0);
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 0; i++) {
 			float newDist;
-			if(intersectSphere(uSphereCenters[i], lightStart, rayDir, newDist, inObject)){
+			bool inObject = false;
+			if(intersectSphere(uSphereCenters[i], lightStart, rayDir, newDist)){
 				if(newDist < closestDist){
 					closestDist = newDist;
 					pos = lightStart + closestDist * rayDir; //get the position in the world space
@@ -151,10 +153,10 @@
 			      	else{
 			      		normal = uSphereCenters[i] - pos;
 			      	}
-			      	color = vec4(0.1*float(i), 0.02*float(i), 0.2*float(i), PROPERTY_CRYSTAL); //the color of sphere is always white
+			      	color = vec4(0.1*float(i), 0.02*float(i), 0.2*float(i), PROPERTY_REGULAR); //the color of sphere is always white
 				}
 			}
-		}*/
+		}
 
 		float iNum = float(uInticesNumber);
 		float vNum = float(uVerticesNumber);
@@ -173,7 +175,7 @@
 			vec3 C = texture2D(uTriangleVertices, vec2(float(index.z)/vNum+vOffset, 0.5)).xyz;
 
 			if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint, triNorm)){
-				if(intersectPoint.z < closestDist){
+				if(true || intersectPoint.z < closestDist){
 					if(property == PROPERTY_CLOUD_POINTS){
 						//!!!!! cloud points !!!!!!!//
 						//check intersect with tiny circle
@@ -212,7 +214,7 @@
 									pos = lightStart + newDist * rayDir;
 									normal = pos - center;
 									color = vec4(1.0, 1.0, 1.0, float(PROPERTY_CLOUD_POINTS)); //the color of sphere is always white
-									//return true;
+									return true;
 								}
 							}
 						}
@@ -275,18 +277,15 @@
 
 		vec3 pos, norm;
 		vec3 colorFinal;
-		vec3 colorMirror;
 		vec4 colorObject;
 
 		if (intersectWorld(uCameraPosition, rayDir, pos, norm, colorObject)) {
 	      colorFinal = lightAt(pos, norm, -rayDir, colorObject.rgb, int(colorObject.a));
-	      colorMirror = (colorObject.rgb + vec3(0.7)) / 1.7; //TODO: tune it
 	      rayDir = reflect(rayDir, norm);
 	      //start light/ray reflection iteratively with limited times 
-	      for (int i = 0; i < 0; i++) {
+	      for (int i = 0; i < 3; i++) {
 	      	if(intersectWorld(pos, rayDir, pos, norm, colorObject)){
 	      		colorFinal += lightAt(pos, norm, -rayDir, colorObject.rgb, int(colorObject.a)) * MIRROR_COEFF;
-	      		colorMirror *= (colorObject.rgb + vec3(0.7)) / 1.7; //TODO: tune it
 	      		rayDir = reflect(rayDir, norm);
 	      	}else{
 	      		break;

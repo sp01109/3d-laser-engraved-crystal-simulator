@@ -67,7 +67,7 @@ function setMatrixUniforms(update){
     gl.uniform4fv(prg.uLightAmbient, [0.05, 0.05, 0.05, 1.0]);
     gl.uniform3fv(prg.uLightColor,   lightColors);
     gl.uniform3fv(prg.uLightPosition,[5,3,0, 0,0,100, -3,-5,0, 0,0,-3]);
-    gl.uniform3fv(prg.uLightCoefficient, [0.3,0.4,0.7, 0.0,0.2,0.9, 0.0,0.2,0.3]);
+    gl.uniform3fv(prg.uLightCoefficient, [0.1,0.2,0.7, 0.0,0.3,0.9, 0.0,0.2,0.3]);
 
     /* tiny circles' radius */
     gl.uniform1f(prg.uSphereRadius, controller.pointRadius);
