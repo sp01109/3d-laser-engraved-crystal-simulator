@@ -24,7 +24,7 @@ function configure(){
     
     //Creates and sets up the camera location
     camera = new Camera();
-    camera.goHome([110,0,-10]);
+    camera.goHome([110,110,-20]);
     camera.hookRenderer = drawScene;
     
     //Creates and sets up the mouse and keyboard interactor
@@ -47,12 +47,27 @@ function load(){
 function setMatrixUniforms(update){
     /* camera */
     gl.uniform3fv(prg.uCameraPosition, camera.position);
+    var strengthness = 0.4;
+    var lightColors = [];
+    lightColors.push(1-controller.lightColor1[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor1[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor1[2]*strengthness/255);
+    lightColors.push(1-controller.lightColor2[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor2[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor2[2]*strengthness/255);
+    lightColors.push(1-controller.lightColor3[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor3[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor3[2]*strengthness/255);
+    lightColors.push(1-controller.lightColor4[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor4[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor4[2]*strengthness/255);
 
     /* light */
-    gl.uniform4fv(prg.uLightAmbient, [0.2, 0.2, 0.2, 1.0]);
-    gl.uniform3fv(prg.uLightColor,   [0.1,0.1,0.8, 0.5,0.5,0.5, 0.2,0.2,0.6]);
-    gl.uniform3fv(prg.uLightPosition,[5,3,0, 0,0,100, -3,-5,0]);
-    gl.uniform3fv(prg.uLightCoefficient, [0.3,0.4,0.7, 0.4,0.2,0.8, 0.05,0.2,0.8]);
+    //console.info("light colors: "+lightColors);
+    gl.uniform4fv(prg.uLightAmbient, [0.05, 0.05, 0.05, 1.0]);
+    gl.uniform3fv(prg.uLightColor,   lightColors);
+    gl.uniform3fv(prg.uLightPosition,[5,3,0, 0,0,100, -3,-5,0, 0,0,-3]);
+    gl.uniform3fv(prg.uLightCoefficient, [0.3,0.4,0.7, 0.0,0.2,0.9, 0.0,0.2,0.3]);
 
     /* tiny circles' radius */
     gl.uniform1f(prg.uSphereRadius, controller.pointRadius);
@@ -122,7 +137,7 @@ function setMatrixUniforms(update){
             }
 
             //accumulate # total vertices for offsetting next obj's indices
-            vlength += o.vertices.length/4; 
+            vlength += o.vertices.length/3; 
             //console.info("obj "+k+"'s # vertices: "+ o.vertices.length/3 + ", # indices:" + o.indices.length/3);
         }
         gl.uniform1i(prg.uInticesNumber, indices.length/3);

@@ -37,10 +37,10 @@
 	uniform vec3 uCameraPosition;
 
 	//lights
-	const   int  maxLight = 3;
+	const   int  maxLight = 4;
 	uniform vec4 uLightAmbient;
-	uniform vec3 uLightColor[3];
-	uniform vec3 uLightPosition[3];
+	uniform vec3 uLightColor[4];
+	uniform vec3 uLightPosition[4];
 	uniform vec3 uLightCoefficient[3]; //ka, ks, kd for three differen materials(properties)
 
 	//spheres
@@ -220,7 +220,7 @@
 						closestDist = intersectPoint.z;
 						pos = intersectPoint;
 						normal = triNorm;
-						color = vec4(0.0, 0.0, 0.0, float(PROPERTY_CRYSTAL)); //the color of sphere is always white
+						color = vec4(0.001, 0.001, 0.001, float(PROPERTY_CRYSTAL)); //the color of sphere is always white
 					} else {
 						closestDist = intersectPoint.z;
 						pos = intersectPoint;
@@ -234,7 +234,7 @@
 		if(closestDist == 10000.0) return false;
 
 		return true;
-	} 
+	}
 
 	vec3 lightAt(in vec3 pos, in vec3 N, in vec3 E, in vec3 objColor, in int property) {
 		vec3 color = vec3(0,0,0);
@@ -257,18 +257,17 @@
 				vec3 R = reflect(-L, normalize(N));
 
 				float c = ks * pow(max(dot(R, E), 0.0), 30.0) + kd * dot(L, normalize(N));
-				vec3 lightColor = uLightAmbient.rgb+uLightColor[i];
 
 				if (c > 1.0) {
 				  // to get the contour of light
-				  color += (ka*lightColor + mix(objColor, 1.6*uLightColor[i], c - 1.0)); 
+				  color += (ka*uLightColor[i] + mix(uLightColor[i], 1.6*uLightColor[i], c - 1.0)); 
 				}else{
-				  color += (ka*lightColor + c*objColor);
+				  color += (ka*uLightColor[i] + c*uLightColor[i]);
 				}
 			}
 		}
 
-		return color;
+		return 0.5*objColor+color;
 	}
 
 	void main(void){
@@ -350,6 +349,10 @@
 	  this.crystalHeight = 4.0;
 	  this.pointRadius = 0.01;
 	  this.pointDensity = 10;
+	  this.lightColor1 = [255, 255, 0];
+	  this.lightColor2 = [0, 0, 255];
+	  this.lightColor3 = [0, 0, 255];
+	  this.lightColor4 = [0, 0, 255];
 	  this.loadFile = function() {document.getElementById('loadObjbutton').click()};
 	};
 
@@ -366,6 +369,12 @@
 	  f2.add(controller, 'crystalWidth',  1, 20).name('Width').step(1).listen();
 	  f2.add(controller, 'crystalHeight', 1, 20).name('Height').step(1).listen();
 	  f2.open();
+	  var f3 = gui.addFolder('Light Properties');
+	  f3.addColor(controller, 'lightColor1').name('Light1 Color');
+	  f3.addColor(controller, 'lightColor2').name('Light2 Color');
+	  f3.addColor(controller, 'lightColor3').name('Light3 Color');
+	  f3.addColor(controller, 'lightColor4').name('Light4 Color');
+	  f3.open();
 	  gui.add(controller, 'loadFile').name('Load OBJ file');
 	  //get init object
 	  theObject = new OBJ.Mesh("res/teapot.obj");
