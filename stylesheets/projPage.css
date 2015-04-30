@@ -65,7 +65,9 @@
   -moz-transition: opacity .3s 0s, visibility 0s .3s;
   transition: opacity .3s 0s, visibility 0s .3s;
 }
-
+p{
+  text-align:justify;
+}
 a {
   color: #159957;
   text-decoration: none;
