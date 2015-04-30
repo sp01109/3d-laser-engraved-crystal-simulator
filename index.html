@@ -37,10 +37,11 @@
 	uniform vec3 uCameraPosition;
 
 	//lights
-	uniform vec3 uLightPosition; 
-	uniform vec4 uLightAmbient;  
-	uniform vec4 uLightDiffuse;
-	const vec3 lightDir = vec3(0.0, 0.0, -1.0);
+	const   int  maxLight = 3;
+	uniform vec4 uLightAmbient;
+	uniform vec3 uLightColor[3];
+	uniform vec3 uLightPosition[3];
+	uniform vec3 uLightCoefficient[3]; //ka, ks, kd for three differen materials(properties)
 
 	//spheres
     uniform float uSphereRadius; //radius
@@ -56,6 +57,10 @@
     const int PROPERTY_REGULAR = 0;
 	const int PROPERTY_CLOUD_POINTS = 1;
 	const int PROPERTY_CRYSTAL = 2;
+	const float MIRROR_COEFF = 0.8;
+	const float REFRECTION_COEFF = 0.9;
+	const float VIEW_DEPTH = 10000.0;
+	const float PI = 3.14159265359;
 
 	//this pixel's position
 	varying vec3 vPixelPosition; 
@@ -118,21 +123,6 @@
 		return true; // I is in T
 	}
 
-	vec3 lightAt(vec3 N, vec3 E, vec3 color) {
-		vec3 L = normalize(lightDir);
-		vec3 R = reflect(-L, normalize(N));
-
-		//ks, kd
-		float c = 0.4 * pow(max(dot(R, E), 0.0), 30.0) + 0.7 * dot(L, normalize(N));
-
-		if (c > 1.0) {
-		  //??? 1.6
-		  return mix(color, vec3(1.6, 1.6, 1.6), c - 1.0);
-		}
-		//add ka
-		return 0.3*normalize(vec3(1.0,1.0,1.0))+ c * color;
-	}
-
 	/**
 	* lightStart: light's start position (eg: camera's postion at beginning)
 	* rayDir:    vector of the ray from camera via pixel
@@ -144,17 +134,24 @@
                       	out vec3 pos, out vec3 normal, out vec4 color){
 		float closestDist = 10000.0;
 		/*
-		vec3 uSphereCenters[1];
-		uSphereCenters[0] = vec3(0.0, 0.0, 0.0);
-		for (int i = 0; i < 0; i++) {
+		vec3 uSphereCenters[5];
+		uSphereCenters[0] = vec3(-1.5, 0.0, 2.0);
+		uSphereCenters[1] = vec3(1.5, 0.0, 2.0);
+		uSphereCenters[2] = vec3(0.0, 1.5, -2.0);
+		uSphereCenters[3] = vec3(0.0, -1.5, -2.0);
+		uSphereCenters[4] = vec3(0.0, 0.0, 0.0);
+		for (int i = 0; i < 4; i++) {
 			float newDist;
-			//TODO: take cube into consideration
-			if(intersectSphere(uSphereCenters[i], lightStart, rayDir, newDist)){
+			if(intersectSphere(uSphereCenters[i], lightStart, rayDir, newDist, inObject)){
 				if(newDist < closestDist){
 					closestDist = newDist;
-					pos = lightStart + newDist * rayDir; //get the position in the world space
-			      	normal = pos - uSphereCenters[i]; //calculate normal of the surface
-			      	color = vec4(0.9, 0.9, 0.0, 1.0); //the color of sphere is always white
+					pos = lightStart + closestDist * rayDir; //get the position in the world space
+					if(!inObject) //calculate normal of the surface, need to be reversed if the intersection is in the object
+			      		normal = pos - uSphereCenters[i]; 
+			      	else{
+			      		normal = uSphereCenters[i] - pos;
+			      	}
+			      	color = vec4(0.1*float(i), 0.02*float(i), 0.2*float(i), PROPERTY_CRYSTAL); //the color of sphere is always white
 				}
 			}
 		}*/
@@ -214,7 +211,7 @@
 									closestDist = newDist;
 									pos = lightStart + newDist * rayDir;
 									normal = pos - center;
-									color = vec4(1.0, 1.0, 1.0, 1.0); //the color of sphere is always white
+									color = vec4(1.0, 1.0, 1.0, float(PROPERTY_CLOUD_POINTS)); //the color of sphere is always white
 									//return true;
 								}
 							}
@@ -223,12 +220,12 @@
 						closestDist = intersectPoint.z;
 						pos = intersectPoint;
 						normal = triNorm;
-						color = vec4(0.4, 0.2, 0.0, 1.0); //the color of sphere is always white
+						color = vec4(0.0, 0.0, 0.0, float(PROPERTY_CRYSTAL)); //the color of sphere is always white
 					} else {
 						closestDist = intersectPoint.z;
 						pos = intersectPoint;
 						normal = triNorm;
-						color = vec4(0.93, 0.93, 1.0, 0.2); //the color of sphere is always white
+						color = vec4(0.93, 0.93, 1.0, float(PROPERTY_CRYSTAL)); //the color of sphere is always white
 					}
 				}
 			}
@@ -239,6 +236,41 @@
 		return true;
 	} 
 
+	vec3 lightAt(in vec3 pos, in vec3 N, in vec3 E, in vec3 objColor, in int property) {
+		vec3 color = vec3(0,0,0);
+		float ka = 0.0, ks = 0.0, kd = 0.0;
+		for(int k=0; k<3; k++){
+			if(k == property){
+				ka = uLightCoefficient[k].r;
+				ks = uLightCoefficient[k].g;
+				kd = uLightCoefficient[k].b;
+			}
+		}
+
+		for(int i=0; i<maxLight; i++){
+			vec3 L = normalize(pos-uLightPosition[i]);
+			vec3 interuptPoint, interuptN; //useless
+			vec4 interuptColor; //useless
+			bool inObject;
+			//we don't use shadow
+			if(true || !intersectWorld(pos, L, interuptPoint, interuptN, interuptColor)){
+				vec3 R = reflect(-L, normalize(N));
+
+				float c = ks * pow(max(dot(R, E), 0.0), 30.0) + kd * dot(L, normalize(N));
+				vec3 lightColor = uLightAmbient.rgb+uLightColor[i];
+
+				if (c > 1.0) {
+				  // to get the contour of light
+				  color += (ka*lightColor + mix(objColor, 1.6*uLightColor[i], c - 1.0)); 
+				}else{
+				  color += (ka*lightColor + c*objColor);
+				}
+			}
+		}
+
+		return color;
+	}
+
 	void main(void){
 		vec3 rayDir = normalize(vPixelPosition - uCameraPosition);
 
@@ -248,13 +280,13 @@
 		vec4 colorObject;
 
 		if (intersectWorld(uCameraPosition, rayDir, pos, norm, colorObject)) {
-	      colorFinal = lightAt(norm, -rayDir, colorObject.rgb);
+	      colorFinal = lightAt(pos, norm, -rayDir, colorObject.rgb, int(colorObject.a));
 	      colorMirror = (colorObject.rgb + vec3(0.7)) / 1.7; //TODO: tune it
 	      rayDir = reflect(rayDir, norm);
 	      //start light/ray reflection iteratively with limited times 
 	      for (int i = 0; i < 0; i++) {
 	      	if(intersectWorld(pos, rayDir, pos, norm, colorObject)){
-	      		colorFinal += lightAt(norm, -rayDir, colorObject.rgb) * colorMirror;
+	      		colorFinal += lightAt(pos, norm, -rayDir, colorObject.rgb, int(colorObject.a)) * MIRROR_COEFF;
 	      		colorMirror *= (colorObject.rgb + vec3(0.7)) / 1.7; //TODO: tune it
 	      		rayDir = reflect(rayDir, norm);
 	      	}else{
@@ -317,7 +349,7 @@
 	  this.crystalWidth = 4.0;
 	  this.crystalHeight = 4.0;
 	  this.pointRadius = 0.01;
-	  this.pointDensity = 40;
+	  this.pointDensity = 10;
 	  this.loadFile = function() {document.getElementById('loadObjbutton').click()};
 	};
 
@@ -327,7 +359,7 @@
 	  var gui = new dat.GUI();
 	  var f1 = gui.addFolder('Object Properties');
 	  f1.add(controller, 'pointRadius', 0.002, 0.02).name("Point Radius").step(0.002);
-	  f1.add(controller, 'pointDensity', 25, 50).name("Point Density").step(5);
+	  f1.add(controller, 'pointDensity', 5, 50).name("Point Density").step(5);
 	  f1.open();
 	  var f2 = gui.addFolder('Crystal Properties');
 	  f2.add(controller, 'crystalLength', 1, 20).name('Length').step(1).listen();

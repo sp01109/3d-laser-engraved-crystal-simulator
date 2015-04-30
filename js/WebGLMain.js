@@ -24,30 +24,18 @@ function configure(){
     
     //Creates and sets up the camera location
     camera = new Camera();
-    camera.goHome([200,0,0]);
+    camera.goHome([110,0,-10]);
     camera.hookRenderer = drawScene;
     
     //Creates and sets up the mouse and keyboard interactor
     interactor = new CameraInteractor(camera, app.canvas);
-    
-    //Update lights for this example
-    gl.uniform4fv(prg.uLightAmbient,      [0.1,0.1,0.1,1.0]);
-    gl.uniform3fv(prg.uLightPosition,     [0, 0, 100]);
-    gl.uniform4fv(prg.uLightDiffuse,      [0.7,0.7,0.7,1.0]);
-    
-    //init gui with camera settings
-    //initGUIWithCameraSettings();
 }
 
 /**
 * Loads the scene
 */
 function load(){
-    //TODO: load stans and light
-    //var obj = {};
-    //obj.vertices = [0.0,0.0,0.3, -0.3,-0.3,0.0, 0.3,-0.3,0.0, 0.0,0.3,0.0];
-    //obj.indices = [0,1,2, 1,0,3, 0,2,3, 2,1,3];
-    //obj.property = PROPERTY_REGULAR; //don't need to use cloud points function
+    //load cube
     Scene.addObject(cube);
 }
 
@@ -61,9 +49,10 @@ function setMatrixUniforms(update){
     gl.uniform3fv(prg.uCameraPosition, camera.position);
 
     /* light */
-    gl.uniform3fv(prg.uLightPosition,   [0, 120, 120]);
-    gl.uniform4fv(prg.uLightAmbient,    [0.20,0.20,0.20,1.0]);
-    gl.uniform4fv(prg.uLightDiffuse,    [1.0,1.0,1.0,1.0]); 
+    gl.uniform4fv(prg.uLightAmbient, [0.2, 0.2, 0.2, 1.0]);
+    gl.uniform3fv(prg.uLightColor,   [0.1,0.1,0.8, 0.5,0.5,0.5, 0.2,0.2,0.6]);
+    gl.uniform3fv(prg.uLightPosition,[5,3,0, 0,0,100, -3,-5,0]);
+    gl.uniform3fv(prg.uLightCoefficient, [0.3,0.4,0.7, 0.4,0.2,0.8, 0.05,0.2,0.8]);
 
     /* tiny circles' radius */
     gl.uniform1f(prg.uSphereRadius, controller.pointRadius);
@@ -126,7 +115,7 @@ function setMatrixUniforms(update){
             }
 
             //setup cube size automatically
-            if(o.property == PROPERTY_CLOUD_POINTS){
+            if(o.property == PROPERTY_CLOUD_POINTS && update == true){
                 controller.crystalLength = Math.floor(objMax[0]-objMin[0])+3;
                 controller.crystalWidth  = Math.floor(objMax[1]-objMin[1])+3;
                 controller.crystalHeight = Math.floor(objMax[2]-objMin[2])+3;

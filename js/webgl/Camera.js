@@ -13,7 +13,7 @@ function Camera(){
     this.elevation  = 1.0;
     this.radius     = 20; 
 
-    this.fovy       = 30;
+    this.fovy       = 25;
     this.c_plane    = vec3.create(); //center of view plane
     this.lb_plane    = vec3.create(); //left bottum of the view plane
     this.cornersVertexBuffer = gl.createBuffer();

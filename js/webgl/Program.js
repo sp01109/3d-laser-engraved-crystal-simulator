@@ -100,8 +100,9 @@ var Program = {
         //uniform variables' index
         prg.uCameraPosition   = gl.getUniformLocation(prg, "uCameraPosition");
         prg.uLightAmbient     = gl.getUniformLocation(prg, "uLightAmbient");
-        prg.uLightDiffuse     = gl.getUniformLocation(prg, "uLightDiffuse");
+        prg.uLightColor       = gl.getUniformLocation(prg, "uLightColor");
         prg.uLightPosition    = gl.getUniformLocation(prg, "uLightPosition");
+        prg.uLightCoefficient = gl.getUniformLocation(prg, "uLightCoefficient");
         prg.uSphereRadius     = gl.getUniformLocation(prg, "uSphereRadius");
         prg.uSphereDensity    = gl.getUniformLocation(prg, "uSphereDensity");
         prg.uInticesNumber    = gl.getUniformLocation(prg, "uInticesNumber");
