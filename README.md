@@ -1,6 +1,8 @@
 # 3d-laser-engraved-crystal-simulator
 
 # References
+
+
 ## Ray-tracing:
 - http://web.cse.ohio-state.edu/~hwshen/681/Site/Slides_files/basic_algo.pdf
 - http://www.cs.utah.edu/~shirley/books/fcg2/rt.pdf
@@ -13,9 +15,9 @@
 
 ## WebGL:
 - WebGL Beginner's Guide by Diego Cantor Brandon Jones  
-- https://github.com/frenchtoast747/webgl-obj-loader
-- http://math.hws.edu/eck/cs424/notes2013/19_GLSL.html
-- https://msdn.microsoft.com/en-us/library/ie/dn302341(v=vs.85).aspx
+- WebGL Loader : https://github.com/frenchtoast747/webgl-obj-loader
+- GPU Ray Tracing With GLSL: http://math.hws.edu/eck/cs424/notes2013/19_GLSL.html
+-  WebGL API: https://msdn.microsoft.com/en-us/library/ie/dn302341(v=vs.85).aspx
 
 ## dat.Gui:
 - https://code.google.com/p/dat-gui/
