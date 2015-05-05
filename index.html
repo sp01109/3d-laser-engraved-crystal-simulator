@@ -2,7 +2,7 @@
 <html lang="en-us">
   <head>
     <meta charset="UTF-8">
-    <title>3d-laser-engraved-crystal-simulator by Hedwig188</title>
+    <title>Simulate Crystal Laser Engraving</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
@@ -14,16 +14,13 @@
   <body>
 
     <section class="page-header">
-      <h1 class="project-name">3d-laser-engraved-crystal-simulator</h1>
+      <h1 class="project-name">Simulate Crystal Laser Engraving</h1>
       <h2 class="project-tagline">University of Southern California CSCI 580 Spring 2015</h2>
       <h2 class="project-tagline">Team: Empire</h2>
-      <!-- <a href="https://github.com/Hedwig188/3d-laser-engraved-crystal-simulator" class="btn">View on GitHub</a>
-      <a href="https://github.com/Hedwig188/3d-laser-engraved-crystal-simulator/zipball/master" class="btn">Download .zip</a>
-      <a href="https://github.com/Hedwig188/3d-laser-engraved-crystal-simulator/tarball/master" class="btn">Download .tar.gz</a> -->
       <div class="menu_bar">
-        <div class="menu_item" id="abstract"><a href="#abstract_title">Abstract</a></div>
-        <div class="menu_item" id="background"><a href="#motivation_title">Background</a></div>
+        <div class="menu_item" id="abstract"><a href="#abstract_title">Introduction</a></div>
         <div class="menu_item" id="implementation"><a href="#algorithm_title">Implementation</a></div>
+        <div class="menu_item" id="challenge"><a href="#challenges_title">Challenges</a></div>
         <div class="menu_item" id="result"><a href="#result_title">Result</a></div>
         <div class="menu_item" id="team"><a href="#contact_title">Team</a></div>
         <div class="menu_item" id="reference"><a href="#reference_title">Reference</a></div>
@@ -31,50 +28,86 @@
     </section>
     <section class="main-content">
       <h3>
-<a id="abstract_title" class="anchor" href="#abstract_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Abstract</h3>
+<a id="abstract_title" class="anchor" href="#abstract_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h3>
 <img id="finalResultImg2" src="img/expected2.png" alt="expected result"></img>
 <img id="finalResultImg" src="img/expected.png" alt="expected result"></img>
+<label id="resultCaption2" for="finalResultImg2">Figure 1. Simulated result from others</label>
+<label id="resultCaption" for="finalResultImg">Figure 2. Final result1</label>
 </br>
-<p>Laser Etch is a popular and quick technology now. It is widely used in creating customized beautiful gifts. Therefore, a perfect simulation can provide a basic idea to customers about how the final product will look like. Moreover, it can promote customers'' buying willingness. The similar simulator we can find on the market is given the result as the left image at above. Our project focuses on creating a tool to simulate a better and real-time 3D Laser Etch product. The functions will include allowing users to upload their desired 3D model and getting the crystal laser etch simulation.
+<p>Laser Etch is a popular and quick technology now. It is widely used in creating customized beautiful gifts. Therefore, a perfect simulation can provide a basic idea to customers about how the final product will look like. Moreover, it can promote buying willingness from customers. The similar simulator we can find on the market is given the result as Figure 1 [1]. Our project focuses on creating a 3D Laser Etch simulator with better appearance and interactive interface. The functions will include allowing users to upload their desired 3D model and adjusting desired cooresponding parameters such as the density of points and size of the crystal.
 </p>
 
 <h3>
-<a id="algorithm_title" class="anchor" href="#algorithm_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Algorithm and Method</h3>
-<p>To make the tool become useful, we are trying to implement it as a web application. Ray-tracing is our rendering environment because it is good for showing a transparent object. Therefore, the task is broken down into following works. First, we have to realize the basic ray-tracing program. We practiced it with C++. Second, we have to transfer the program into javascript to make it run on the browser and provide more interactions including loading OBJ file and adjusting scenes. We have to use WebGL to achieve realtime calculation. The objects information should be sent into the texture memory space in GPU since the shader programs are focused on applying ray-tracing algorithm on each pixel on the screen. In addition, since WebGL doesn’t allow recursive function exist, the solution we used is creating individual functions for each layer of light tree.
-</br></br> The most significant part in our program is drawing an object with a set of cloud points. The algorithm is inspired by the section, generating random points in triangles, in “Graphics Gems” edited Andrew S. Glassner. It use barycentric coordination to get a point in a triangle base on the coordinates of three vertices. We make the algorithm generate equaly distributed points. The original idea to put the points, or tiny spheres, into the shader program was calculating the points outside of shader and sending them as objects into the program. However, the problem of it is, first, it is too exhausting to consider all the tiny spheres during calculating on pixel. Second, the texture memory is too less to put all these contents. Therefore, alternately, we only calculate the cloud points once a ray intersect with a specific triangle and check the intersection by using sphere intersection function among the points in this triangle. In this way, we can get a better performance.
+<a id="algorithm_title" class="anchor" href="#algorithm_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Implementation</h3>
+<p>To make the tool become useful, we are trying to implement it as a web application. In addition, ray-tracing is our fundamental way because it can provide more detail about showing a transparent object. Therefore, the task can be broken down into following works. First, we have to realize the basic ray-tracing program. We practiced it with C++. Second, we have to transfer the program into javascript to make it run on browsers and provide more interactive interfaces including loading OBJ file and adjusting objects in the scene. We have to use WebGL to achieve real-time calculation. Finally, the most significant part in our program is drawing an object with a set of cloud points. The algorithm is inspired by a section, “generating random points in triangles”, in “Graphics Gems” edited Andrew S. Glassner [7]. It uses barycentric coordination to get a point in a triangle base on the coordinates of three vertices. The detail of this method is descripted as Figure 3[3]. We make the algorithm generate distributed points by tuning the parameters, t and s, based on the biggest angle in a triangle. The following Figure 4. is the system schematic of our program.    
 </p>
-<h4> Algorithm flow chart</h4>
 
-
+<figure>
+<img id="point_cloud_method1" src="img/point_cloud_method.png" alt="point_cloud_method.png"></img>
+<figCaption>Figure 3. Generating random points in triangles</figCaption>
+</figure>
+<figure>
 <img id="alg_img" src="img/algorithm.jpg" alt="algorithm"></img>
-
-
-<p>1. Implement basic ray tracing by using c++</p>
-
+<figCaption>Figure 4. Generating random points in triangles</figCaption>
+</figure>
+<p>1. Implement basic ray tracing by using C++</p>
+<figure>
 <img id="basic_rt_opengl" src="img/ray_tracing_opengl.png" alt="basic ray tracing opengl"></img>
+<figCaption>Figure 5. Basic ray tracing C++</figCaption>
+</figure>
 <p>2. Simulate point cloud in matlab</p>
-
+<figure>
 <img id="sim_point_cloud_img" src="img/matlab_simulation.png" alt="point cloud matlab simulation"></img>
-<img id="point_cloud_method1" src="img/point_cloud_method1.png" alt="point_cloud_method1.png"></img>
-<img id="point_cloud_method2" src="img/point_cloud_method2.png" alt="point_cloud_method2.png"></img>
-
+<figCaption>Figure 6. Point cloud in matlab</figCaption>
+</figure>
 <p>3. Implement ray tracing by using webgl</p>
+<figure>
 <img id="basic_rt_img" src="img/basic_ray_tracing.png" alt="basic ray tracing"></img>
+<figCaption>Figure 7. Basic ray tracing WebGL</figCaption>
+</figure>
 <p>4. Transform object to point cloud</p>
+<figure>
 <img id="point_cloud_img" src="img/point_cloud.png" alt="point cloud"></img>
-
-
+<figCaption>Figure 8. Transform obj to point cloud</figCaption>
+</figure>
 <h3>
-<a id="result_title" class="anchor" href="#result_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Result</h3>
-<h4> The render result without the cloud point
-<p> </p>
-<img id="ResultImg1" src="img/crystal1.jpg" alt="expected result"></img></br>
-<img id="ResultImg2" src="img/crystal2.jpg" alt="expected result"></img></br>
-<img id="ResultImg2" src="img/crystal3.jpg" alt="expected result"></img></br>
-<h4> The render result with cloud point
-<p> </p>
-<img id="ResultImg2" src="img/expectedFinal.png" alt="expected result"></img></br>
+<a id="challenges_title" class="anchor" href="#challenges_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Challenges</h3>
+<h4>A. Tuning a better lighting parameters for a crystal object</h4>
+<p>The phong shading algorithm is used in our ray-tracing engine, which makes the shading coefficents Ka, Kd, and Ks especially important. We have to tune these parameters to make the cube similiar to a cystal object. We tested with a lot of different combinations and referred to any possible solutions we can find. Finally, we have a conclustion that Ka should be as less as possible. On the other hand, Kd and Ks should be set properly.</p>
+<h4>B. Implementing Ray-tracing in WebGL</h4>
+<p>There are two problems we met during implement ray-tracing in WebGL. First, since the shader programs are focused on rendering every pixels with ray-tracing algorithm, we cannot use the triditional way to feed the object information into shader programs as regular vertices. Moreover, it cannot be sent into as uniform varibles neither. In the other words, the object’s information should be sent into a big memory space that is the texture memory space in GPU. However, to access the every contents in a texture is not intuitive. We spent a lot of time on finding a reasonable indexing. We figured out that the index should be calculated by the length of contents and added an offset by the length of an element.</br>
+In addition, since WebGL doesn’t allow recursive function and the ray-tracing algorithm is based on recursive structure, we were trying to reformat it into a loop structure. However, finally, we figured out we cannot do anything but can just create individual functions for each layer in the light tree.
+</p>
+<h4>C. Cloud Point Calculation</h4>
+<p>Although, we had a method to generate the cloud points in a triangle but we still need to find a way to put it into our system. The original idea was calculating the points outside of shader programs and sending them in as many objects. However, the problem is, first, it is too exhausting to consider all the tiny spheres during calculating one pixel. Second, the texture memory may be too less to put all these information. Therefore, alternately, we calculate the cloud points everytime when a ray intersect with a specific triangle and check the intersection by using sphere intersection function among the points in this triangle. In this way, we can get a better performance.
+</p>
+<h4>D. Improving performance</h4>
+<p>The traditional ray-tracing program is too slow to be used in a real-time interactive program even after introducing WebGL implementation. Coincidentally, we find that we don’t need to use the full ray-tracing algorithm with fraction function. We can just always draw the object on the crystal cube. The result is still amazing. In this way, we improved the performance of our program without any penalty.
+</p>
+<h3>
+<a id="result_title" class="anchor" href="#result_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Result & Conclusion</h3>
+<h4> The render result without the cloud point</h4>
 
+<figure>
+<img id="ResultImg1" src="img/crystal1.jpg" alt="expected result"></img>
+<figCaption>Figure 9.</figCaption>
+</figure>
+<figure>
+<img id="ResultImg2" src="img/crystal2.jpg" alt="expected result"></img>
+<figCaption>Figure 10.</figCaption>
+</figure>
+<figure>
+<img id="ResultImg2" src="img/crystal3.jpg" alt="expected result"></img>
+<figCaption>Figure 11.</figCaption>
+</figure>
+<h4> The render result with cloud point</h4>
+<p>In this project, we successfully applied ray-tracing to our crystal model with realistic and beautiful shinning effect under lightening.  The engraved sculpture in the crystal is composed of multiple small and shinny spheres. We prove that using ray-tracing and cloud points algorithm to create an interactive 3D laser engraving simulator is a possible and a great idea. What is different from other teams are, first, we not only implemented the ray-tracing algorithm on WebGL with only hardcoded spheres but also feed an object information into GPU by using texture memory space. Moreover, we developped a way to transform the object into a set of cloud points. Finally, we even consider the camera view control to make this program be interactive.</br>
+There are other parts can be improved. For example, there are some black parts in those cloud points. The reason might be the points in each triangle are not distributed very well. In addition, this program can only load an object file less than thousand vertices or faces because of the lack of texture memory and the consuming calculation. We may optimize it by thinking different calculation way. In the end, the below figure is our achievement in this project. You can play with it by clicking this <a href="http://sp01109.github.io/3d-laser-engraved-crystal-simulator/3DLaserEngraveSimulator.html">link</a> . We are proud of it. Have fun!
+</p>
+<figure>
+<img id="ResultImg2" src="img/expectedFinal.png" alt="expected result"></img></br>
+<figCaption>Figure 12. Final Result2</figCaption>
+</figure>
 <h3>
 <a id="contact_title" class="anchor" href="#contact_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Team</h3>
 
@@ -99,7 +132,8 @@
   • <a href="https://msdn.microsoft.com/en-us/library/ie/dn302341(v=vs.85).aspx">https://msdn.microsoft.com/en-us/library/ie/dn302341(v=vs.85).aspx</a></p>
 <p>dat.Gui:</br>
   • <a href="https://code.google.com/p/dat-gui/">https://code.google.com/p/dat-gui/</a><p>
- <a href="https://github.com/sp01109/3d-laser-engraved-crystal-simulator">View on GitHub</a> 
+ <a href="https://github.com/sp01109/3d-laser-engraved-crystal-simulator">View on GitHub</a></br>
+<a href="http://sp01109.github.io/3d-laser-engraved-crystal-simulator/3DLaserEngraveSimulator.html">Demo</a>
  
     </section>
   <a href="#0" class="cd-top">Top</a>
