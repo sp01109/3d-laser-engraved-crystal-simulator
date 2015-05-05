@@ -315,10 +315,15 @@
 </script>
 </head>
 <body bgcolor="#000000">
-  <input id="loadObjbutton" type="file" style="visibility:hidden" />
+  <div id="help" style="color:white; padding:3px; ">
+  	  <p> ←↑↓→ : change camera position</p>
+	  <p> Q/A : change camera distance</p>
+	  <p> W/S : change camera fov</p>
+  </div>
   <div style="z-index:-1; text-align:center; width:100%; height:100%;">
   	<canvas id="canvas" style="border: none;"></canvas>
   </div>
+  <input id="loadObjbutton" type="file" style="visibility:hidden" />
 <script type="text/javascript">
 	//set up load file button
 	document.getElementById('loadObjbutton').addEventListener('change', handleFileSelect, false);
@@ -332,6 +337,14 @@
 		      var objStr = reader.result;
 		      var o = new OBJ.Mesh(objStr);
 		      o.property = PROPERTY_CLOUD_POINTS;
+		      if(o.indices.length%3 != 0){
+		      	alert("Try to use an object composed by triangles");
+		      	return;
+		      }
+		      if(o.indices.length/3 > 1500){
+		      	alert("#faces: "+o.indices.length/3+"\nTry to use an object with\n#faces < 1500");
+		      	return;
+		      }
 		      //pop up previous object
 		      Scene.clear();
 		      Scene.addObject(o);
