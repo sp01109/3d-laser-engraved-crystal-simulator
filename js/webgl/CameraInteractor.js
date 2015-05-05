@@ -41,8 +41,8 @@ CameraInteractor.prototype.onMouseMove = function(ev){
 	if (!this.dragging) return;
 	this.ctrl = ev.ctrlKey;
 	this.alt = ev.altKey;
-	var dx = this.x - this.lastX;
-	var dy = this.y - this.lastY;
+	var dx = (this.x - this.lastX)*0.5;
+	var dy = (this.y - this.lastY)*0.5;
 	
 	if (this.button == 0) { 
 		if(this.ctrl){
@@ -69,17 +69,24 @@ CameraInteractor.prototype.onKeyDown = function(ev){
 		}
 		else if (this.key == 37){
 			c.changeAzimuth(-10);
+			
 		}
 		else if (this.key == 39){
 			c.changeAzimuth(10);
 		}
         else if (this.key == 87) {  //w -wide
-            if(fovy < 120) fovy+=5;
-            console.info('FovY:'+fovy);
+        	c.changeFov(5);
+            console.info('camera.FovY:'+c.fovy);
         }
-        else if (this.key == 78) { //n - narrow
-            if(fovy >15 ) fovy-=5;
-            console.info('FovY:'+fovy);
+        else if (this.key == 83) { //s - narrow
+        	c.changeFov(-5);
+            console.info('camera.FovY:'+c.fovy);
+        }
+        else if (this.key == 81) { //q - more closer
+        	this.translate(-10);
+        }
+        else if (this.key == 65) { //a - move farer
+        	this.translate(10);
         }
 	}
      
@@ -117,16 +124,11 @@ CameraInteractor.prototype.update = function(){
 }
 
 CameraInteractor.prototype.translate = function(value){
-	
 	var c = this.camera;
-	var dv = 2 * this.MOTION_FACTOR * value / camera.view.canvas.height;
-	
-	c.dolly(Math.pow(1.1,dv));
+	c.dolly(value);
 }
 
 CameraInteractor.prototype.rotate = function(dx, dy){
-	
-	
 	var camera = this.camera;
 	var canvas = this.canvas;
 	

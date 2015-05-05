@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- CSS Styles -->
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<!-- GUI Libraries -->
+<script type="text/javascript" src="js/dat.gui.min.js"></script>
+<!-- MATH Libraries -->
+<script type='text/javascript' src='js/gl-matrix-min.js'></script>
+<!-- WEBGL Libraries -->
+<script type='text/javascript' src='js/webgl/Globals.js'></script>
+<script type='text/javascript' src='js/webgl/Utils.js'></script>
+<script type='text/javascript' src='js/webgl/Program.js'></script>
+<script type='text/javascript' src='js/webgl/Scene.js'></script>
+<script type='text/javascript' src='js/webgl/Camera.js'></script>
+<script type='text/javascript' src='js/webgl/CameraInteractor.js'></script>
+<script type='text/javascript' src='js/webgl/WebGLApp.js'></script>
+<!-- Object file loader -->
+<script type="text/javascript" src="js/webgl-obj-loader/webgl-obj-loader.js"></script>
+<!-- Shading Part (Main implementation)-->
+<script type="text/javascript" src="js/WebGLMain.js"></script>
+<script id="shader-vs" type="x-shader/x-vertex">
+	attribute vec2 aVertexPosition;
+	attribute vec3 aPlotPosition;
+
+	varying vec3 vPixelPosition;  
+
+	void main(void){
+		gl_Position = vec4(aVertexPosition, 1.0, 1.0);
+		vPixelPosition = aPlotPosition; 
+	}
+</script>
+<script id="shader-fs" type="x-shader/x-fragment">
+	precision mediump float;
+
+	//camera position
+	uniform vec3 uCameraPosition;
+
+	//lights
+	const   int  maxLight = 4;
+	uniform vec4 uLightAmbient;
+	uniform vec3 uLightColor[4];
+	uniform vec3 uLightPosition[4];
+	uniform vec3 uLightCoefficient[3]; //ka, ks, kd for three differen materials(properties)
+
+	//spheres
+    uniform float uSphereRadius; //radius
+    uniform float uSphereDensity;
+
+    //triangles/object
+    uniform int uVerticesNumber;
+    uniform int uInticesNumber;
+    uniform sampler2D uTriangleVertices;
+    uniform sampler2D uTriangleIndices;
+
+    //property types
+    const int PROPERTY_REGULAR = 0;
+	const int PROPERTY_CLOUD_POINTS = 1;
+	const int PROPERTY_CRYSTAL = 2;
+	const float MIRROR_COEFF = 0.12;
+	const float REFRECTION_COEFF = 0.9;
+	const float VIEW_DEPTH = 10000.0;
+	const float PI = 3.14159265359;
+
+	//this pixel's position
+	varying vec3 vPixelPosition; 
+
+	bool intersectSphere(vec3 center, vec3 lightStart, vec3 rayDir, out float dist) {
+	    vec3 c = center - lightStart;
+	    float b = dot(rayDir, c);
+	    float d = b*b - dot(c, c) + uSphereRadius*uSphereRadius;
+	    //float d = b*b - dot(c, c) + 1.0;
+
+	    if (d < 0.0) {
+	      dist = 10000.0;
+	      return false;
+	    }
+
+	    dist = b - sqrt(d);
+	    if (dist < 0.0) {
+	      dist = 10000.0;
+	      return false;
+	    }
+
+	    return true;
+	}
+
+	bool intersectTriangle(in vec3 A, in vec3 B, in vec3 C
+						 , in vec3 lightStart, in vec3 rayDir
+						 , out vec3 intersectPoint, out vec3 normal){
+		intersectPoint = vec3(0.0, 0.0, 0.0);
+		vec3 u = B-A;
+		vec3 v = C-A;
+		vec3 N = cross(u, v);
+		normal = -normalize(N);
+		
+		float a = -dot(N, lightStart-A);
+		float b = dot(N, rayDir);
+		
+		if(b<0.000001) return false; //parralle
+
+		// get intersect point of ray with triangle plane
+		float r = a/b;
+    	if (r < 0.0) return false;// ray goes away from triangle => no intersect
+    
+    	// for a segment, also test if (r > 1.0) => no intersect
+    	intersectPoint = lightStart + rayDir * r;
+
+    	// is the point inside triangle ?
+    	float uu = dot(u,u);
+    	float uv = dot(u,v);
+    	float vv = dot(v,v);
+    	vec3 w = intersectPoint - A;
+    	float wu = dot(w,u);
+    	float wv = dot(w,v);
+    	float D = uv * uv - uu * vv;
+
+    	// get and test parametric coords
+    	float s = (uv * wv - vv * wu) / D;
+    	if (s < 0.0 || s > 1.0) return false; // I is outside T
+    	float t = (uv * wu - uu * wv) / D;
+    	if (t < 0.0 || (s + t) > 1.0) return false; // I is outside T
+   
+		return true; // I is in T
+	}
+
+	/**
+	* lightStart: light's start position (eg: camera's postion at beginning)
+	* rayDir:    vector of the ray from camera via pixel
+	* pos:       the surface's position in the world
+	* normal:    object surface's normal vector
+	* color:     the color on the object's surface
+	*/
+	bool intersectWorld(in vec3 lightStart, in vec3 rayDir, 
+                      	out vec3 pos, out vec3 normal, out vec4 color){
+		float closestDist = 10000.0;
+		
+		vec3 uSphereCenters[5];
+		uSphereCenters[0] = vec3(-1.5, 0.0, 2.0);
+		uSphereCenters[1] = vec3(1.5, 0.0, 2.0);
+		uSphereCenters[2] = vec3(0.0, 1.5, -2.0);
+		uSphereCenters[3] = vec3(0.0, -1.5, -2.0);
+		uSphereCenters[4] = vec3(0.0, 0.0, 0.0);
+		for (int i = 0; i < 0; i++) {
+			float newDist;
+			bool inObject = false;
+			if(intersectSphere(uSphereCenters[i], lightStart, rayDir, newDist)){
+				if(newDist < closestDist){
+					closestDist = newDist;
+					pos = lightStart + closestDist * rayDir; //get the position in the world space
+					if(!inObject) //calculate normal of the surface, need to be reversed if the intersection is in the object
+			      		normal = pos - uSphereCenters[i]; 
+			      	else{
+			      		normal = uSphereCenters[i] - pos;
+			      	}
+			      	color = vec4(0.1*float(i), 0.02*float(i), 0.2*float(i), PROPERTY_REGULAR); //the color of sphere is always white
+				}
+			}
+		}
+
+		float iNum = float(uInticesNumber);
+		float vNum = float(uVerticesNumber);
+		float iOffset = 0.5/iNum;
+		float vOffset = 0.5/vNum;
+
+		for (int i=0; i<2000000000; i++) {
+			if(i >= uInticesNumber) break; //over signal
+			vec3 intersectPoint, triNorm;
+			float newDist;
+			float cIndex = float(i)/iNum+iOffset; //add 1/3 to get correct index
+			vec3 index = texture2D(uTriangleIndices, vec2(cIndex, 0.5)).xyz;
+			int property = int(texture2D(uTriangleVertices, vec2(float(index.x)/vNum+vOffset, 0.5)).a);
+			vec3 A = texture2D(uTriangleVertices, vec2(float(index.x)/vNum+vOffset, 0.5)).xyz;
+			vec3 B = texture2D(uTriangleVertices, vec2(float(index.y)/vNum+vOffset, 0.5)).xyz;
+			vec3 C = texture2D(uTriangleVertices, vec2(float(index.z)/vNum+vOffset, 0.5)).xyz;
+
+			if(intersectTriangle(A, B, C, lightStart, rayDir, intersectPoint, triNorm)){
+				if(true || intersectPoint.z < closestDist){
+					if(property == PROPERTY_CLOUD_POINTS){
+						//!!!!! cloud points !!!!!!!//
+						//check intersect with tiny circle
+						float freqency = 1.0;
+						float pi = 3.14159265359;
+						float cA = acos(dot((B-A),(C-A))/(length((B-A)*length(C-A)))); //corner A
+						float cB = acos(dot((C-B),(A-B))/(length((C-B)*length(A-B)))); //corner B
+						float cC = pi - cA - cB; //corner C
+						vec3 triVerts[3];
+						if(cA >cB && cA>cC){
+							triVerts[0]=A; triVerts[1]=B; triVerts[2]=C; //A as top
+							if(cA > pi*3.0/4.0) freqency = cA;
+						} else if(cB>cC){
+							triVerts[0]=B; triVerts[1]=C; triVerts[2]=A; //B as top
+							if(cB > pi*3.0/4.0) freqency = cB;
+						}else{
+							triVerts[0]=C; triVerts[1]=A; triVerts[2]=B; //C as top
+							if(cC > pi*3.0/4.0) freqency = cC;
+						}
+
+						for (float T = 0.0; T < 2000000000.0; T++) {
+							if(T > 1.0/uSphereDensity) break;
+							float t = T*uSphereDensity;
+							float step = t/(uSphereDensity*freqency);
+							for (float ss = 0.0; ss < 2000000000.0; ss++) {
+								if(ss >= step) break;
+								float s;
+								if(step==0.0) s=0.0; else s = ss/step;
+								float a = 1.0-t;
+								float b = (1.0-s)*t;
+								float c = s*t;
+								//get most biggest corner as top vertex
+								vec3 center =  a*triVerts[0]+b*triVerts[1]+c*triVerts[2];
+								if(intersectSphere(center, lightStart, rayDir, newDist)){
+									closestDist = newDist;
+									pos = lightStart + newDist * rayDir;
+									normal = pos - center;
+									color = vec4(1.0, 1.0, 1.0, float(PROPERTY_CLOUD_POINTS)); //the color of sphere is always white
+									return true;
+								}
+							}
+						}
+					} else if(property == PROPERTY_REGULAR){
+						closestDist = intersectPoint.z;
+						pos = intersectPoint;
+						normal = triNorm;
+						color = vec4(0.001, 0.001, 0.001, float(PROPERTY_CRYSTAL)); //the color of sphere is always white
+					} else {
+						closestDist = intersectPoint.z;
+						pos = intersectPoint;
+						normal = triNorm;
+						color = vec4(0.93, 0.93, 1.0, float(PROPERTY_CRYSTAL)); //the color of sphere is always white
+					}
+				}
+			}
+		}
+
+		if(closestDist == 10000.0) return false;
+
+		return true;
+	}
+
+	vec3 lightAt(in vec3 pos, in vec3 N, in vec3 E, in vec3 objColor, in int property) {
+		vec3 color = vec3(0,0,0);
+		float ka = 0.0, ks = 0.0, kd = 0.0;
+		for(int k=0; k<3; k++){
+			if(k == property){
+				ka = uLightCoefficient[k].r;
+				ks = uLightCoefficient[k].g;
+				kd = uLightCoefficient[k].b;
+			}
+		}
+
+		for(int i=0; i<maxLight; i++){
+			vec3 L = normalize(pos-uLightPosition[i]);
+			vec3 interuptPoint, interuptN; //useless
+			vec4 interuptColor; //useless
+			bool inObject;
+			//we don't use shadow
+			if(true || !intersectWorld(pos, L, interuptPoint, interuptN, interuptColor)){
+				vec3 R = reflect(-L, normalize(N));
+
+				float c = ks * pow(max(dot(R, E), 0.0), 30.0) + kd * dot(L, normalize(N));
+
+				if (c > 1.0) {
+				  // to get the contour of light
+				  color += (ka*uLightColor[i] + mix(uLightColor[i], 1.6*uLightColor[i], c - 1.0)); 
+				}else{
+				  color += (ka*uLightColor[i] + c*uLightColor[i]);
+				}
+			}
+		}
+
+		return 0.5*objColor+color;
+	}
+
+	void main(void){
+		vec3 rayDir = normalize(vPixelPosition - uCameraPosition);
+
+		vec3 pos, norm;
+		vec3 colorFinal;
+		vec4 colorObject;
+
+		if (intersectWorld(uCameraPosition, rayDir, pos, norm, colorObject)) {
+	      colorFinal = lightAt(pos, norm, -rayDir, colorObject.rgb, int(colorObject.a));
+	      rayDir = reflect(rayDir, norm);
+	      //start light/ray reflection iteratively with limited times 
+	      for (int i = 0; i < 3; i++) {
+	      	if(intersectWorld(pos, rayDir, pos, norm, colorObject)){
+	      		colorFinal += lightAt(pos, norm, -rayDir, colorObject.rgb, int(colorObject.a)) * MIRROR_COEFF;
+	      		rayDir = reflect(rayDir, norm);
+	      	}else{
+	      		break;
+	      	}
+	      }
+		  /*
+	      float n=1.0;//refraction index
+	      float cosI=-1.0*dot(norm,rayDir);
+	      float cosT2=1.0-n*n*(1.0-cosI*cosI);
+	      vec3 nextPos;
+	      vec3 refraColor;
+	      if(cosT2>0)
+	      {
+	      	vec3 T=(n*ratDir)+(n*cosI-sqrt(cosT2))*norm;
+	      	if(intersectWorld(pos, T, nextPos, norm, refraColor))
+	      	{
+	      		colorFinal += 0.5*refraColor;
+	      	}
+	      	
+	      }*/
+	      gl_FragColor = vec4(colorFinal, 1.0);
+	    }else {
+	      discard;
+	      //gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); //background color
+	    }
+	}
+</script>
+</head>
+<body bgcolor="#000000">
+  <input id="loadObjbutton" type="file" style="visibility:hidden" />
+  <div style="z-index:-1; text-align:center; width:100%; height:100%;">
+  	<canvas id="canvas" style="border: none;"></canvas>
+  </div>
+<script type="text/javascript">
+	//set up load file button
+	document.getElementById('loadObjbutton').addEventListener('change', handleFileSelect, false);
+	function handleFileSelect(evt) {
+		var inputFile = evt.target.files[0]; 
+		//check if it is obj file
+		if(inputFile.name.indexOf(".obj") > -1){
+			var reader = new FileReader();
+			//load obj file
+		    reader.onload = function(){
+		      var objStr = reader.result;
+		      var o = new OBJ.Mesh(objStr);
+		      o.property = PROPERTY_CLOUD_POINTS;
+		      //pop up previous object
+		      Scene.clear();
+		      Scene.addObject(o);
+		      drawScene(true); //refresh screen
+		    };
+		    reader.readAsText(inputFile);
+		} 
+	}
+
+	//set up control pannel
+	controlPanel = function() {
+	  this.crystalLength = 4.0;
+	  this.crystalWidth = 4.0;
+	  this.crystalHeight = 4.0;
+	  this.pointRadius = 0.01;
+	  this.pointDensity = 10;
+	  this.lightColor1 = [255, 255, 0];
+	  this.lightColor2 = [0, 0, 255];
+	  this.lightColor3 = [0, 0, 255];
+	  this.lightColor4 = [0, 0, 255];
+	  this.loadFile = function() {document.getElementById('loadObjbutton').click()};
+	};
+
+	//page initialization
+	window.onload = function() {
+	  controller = new controlPanel();
+	  var gui = new dat.GUI();
+	  var f1 = gui.addFolder('Object Properties');
+	  f1.add(controller, 'pointRadius', 0.002, 0.02).name("Point Radius").step(0.002);
+	  f1.add(controller, 'pointDensity', 5, 50).name("Point Density").step(5);
+	  f1.open();
+	  var f2 = gui.addFolder('Crystal Properties');
+	  f2.add(controller, 'crystalLength', 1, 20).name('Length').step(1).listen();
+	  f2.add(controller, 'crystalWidth',  1, 20).name('Width').step(1).listen();
+	  f2.add(controller, 'crystalHeight', 1, 20).name('Height').step(1).listen();
+	  f2.open();
+	  var f3 = gui.addFolder('Light Properties');
+	  f3.addColor(controller, 'lightColor1').name('Light1 Color');
+	  f3.addColor(controller, 'lightColor2').name('Light2 Color');
+	  f3.addColor(controller, 'lightColor3').name('Light3 Color');
+	  f3.addColor(controller, 'lightColor4').name('Light4 Color');
+	  f3.open();
+	  gui.add(controller, 'loadFile').name('Load OBJ file');
+	  //get init object
+	  theObject = new OBJ.Mesh("res/teapot.obj");
+	  webGLStart("canvas");
+	};
+</script>
+
+</body>
+</html>

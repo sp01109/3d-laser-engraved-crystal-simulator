@@ -5,8 +5,6 @@ var app = null;
 function webGLStart(canvasId){
 	//init webgl context
 	app = new WebGLApp(canvasId);
-    initLights();
-
     app.configureGLHook = configure;
     app.loadSceneHook   = load;
     app.drawSceneHook   = drawScene;
@@ -19,154 +17,26 @@ function webGLStart(canvasId){
 var camera = null;
 var interactor = null;
 function configure(){
-	gl.clearColor(0.0,0.0,0.0, 1.0);
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(100.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     
     //Creates and sets up the camera location
-    camera = new Camera(CAMERA_ORBIT_TYPE);
-    camera.goHome([0,0,20]);
+    camera = new Camera();
+    camera.goHome([110,110,-20]);
     camera.hookRenderer = drawScene;
     
     //Creates and sets up the mouse and keyboard interactor
     interactor = new CameraInteractor(camera, app.canvas);
-    
-    //Update lights for this example
-    gl.uniform4fv(prg.uLightAmbient,      [0.1,0.1,0.1,1.0]);
-    gl.uniform3fv(prg.uLightPosition,    [0, 200, 0]);
-    gl.uniform4fv(prg.uLightDiffuse,      [0.7,0.7,0.7,1.0]);
-    
-    //init gui with camera settings
-    //initGUIWithCameraSettings();
-    
-    //init transforms
-    initTransforms();
 }
-
-
-function initLights(){
-//Light uniforms
-gl.uniform3fv(prg.uLightPosition,[4.5,3.0,15.0]);        
-gl.uniform4f(prg.uLightAmbient ,1.0,1.0,1.0,1.0);
-gl.uniform4f(prg.uLightDiffuse,1.0,1.0,1.0,1.0);
-gl.uniform4f(prg.uLightSpecular,1.0,1.0,1.0,1.0);
-
-//Object Uniforms
-gl.uniform4f(prg.uMaterialAmbient, 0.1,0.1,0.1,1.0);
-gl.uniform4f(prg.uMaterialDiffuse, 1.0,1.0,1.0,1.0);
-gl.uniform4f(prg.uMaterialSpecular, 1.0,1.0,1.0,1.0);
-// uLightSpeculargl.uniform4f(prg.uMaterialAmbient, 0.1,0.1,0.1,1.0);
-// gl.uniform4f(prg.uMaterialDiffuse,1.0,1.0,1.0,1.0);
-// gl.uniform4f(prg.uMaterialSpecular, 1.0,1.0,1.0,1.0);
-gl.uniform1f(prg.uShininess, 100.0);
-
-}
-
-/**
-*   Defines the initial values for the transformation matrices
-*/
-function initTransforms(){
-    //Initialize Model-View matrix
-    mvMatrix = camera.getViewTransform();
-    
-    //Initialize Perspective matrix
-    mat4.identity(pMatrix);
-    
-    //Initialize Normal matrix
-    mat4.identity(nMatrix);
-    mat4.set(mvMatrix, nMatrix);
-    mat4.inverse(nMatrix);
-    mat4.transpose(nMatrix);
- }
 
 /**
 * Loads the scene
 */
 function load(){
-    //TODO: load stans and light
-    Scene.loadObject('res/cone.json','cone');
-}
-
-/**
-* Draw scene, will be called if any parameter is been changed
-*/
-function drawScene()
-{
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
-	gl.clearDepth(100.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	gl.viewport(0, 0, app.canvas.width, app.canvas.height);
-
-	try{
-		//Model-View matrix mode setup camera->world
-        mat4.perspective(fovy, app.canvas.width / app.canvas.height, 10, 5000.0, pMatrix);
-        setMatrixUniforms();
-        var updateLightPosition = false;
-        gl.uniform1i(prg.uUpdateLight, updateLightPosition);
-        
-        for (var i = 0; i < Scene.objects.length; i++){
-            var object = Scene.objects[i];
-
-            if (object.alias == 'lightsource'){
-                var lightPos = gl.getUniform(prg, prg.uLightPosition);
-                mat4.translate(mvMatrix,lightPos);
-
-                
-            }
-
-            //Setting uniforms
-            gl.uniform4fv(prg.uMaterialDiffuse, object.diffuse);
-            gl.uniform4fv(prg.uMaterialAmbient, object.ambient);
-            gl.uniform4fv(prg.uMaterialSpecular, object.specular);
-
-
-
-            gl.uniform1i(prg.uWireframe,object.wireframe);
-            gl.uniform1i(prg.uPerVertexColor, object.perVertexColor);
-            
-            //Setting attributes
-            gl.enableVertexAttribArray(prg.aVertexPosition);
-            gl.disableVertexAttribArray(prg.aVertexNormal);
-            gl.disableVertexAttribArray(prg.aVertexColor);
-            
-            gl.bindBuffer(gl.ARRAY_BUFFER, object.vbo);
-            gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(prg.aVertexPosition);
-            
-            if(!object.wireframe){
-                gl.bindBuffer(gl.ARRAY_BUFFER, object.nbo);
-                gl.vertexAttribPointer(prg.aVertexNormal, 3, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(prg.aVertexNormal);
-            }
-            
-            if (object.perVertexColor){
-                gl.bindBuffer(gl.ARRAY_BUFFER, object.cbo);
-                gl.vertexAttribPointer(prg.aVertexColor,4,gl.FLOAT, false, 0,0);
-                gl.enableVertexAttribArray(prg.aVertexColor);
-            }
-
-
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
-            
-            if (object.wireframe){
-                gl.drawElements(gl.LINES, object.indices.length, gl.UNSIGNED_SHORT,0);
-            }
-            else{
-                gl.drawElements(gl.TRIANGLES, object.indices.length, gl.UNSIGNED_SHORT,0);
-            }
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-            
-        }
-    }
-    catch(err){
-        alert(err);
-        console.error(err.description);
-    }	
+    //load cube
+    Scene.addObject(cube);
 }
 
 /**
@@ -174,64 +44,164 @@ function drawScene()
 *
 * Called once per rendering cycle. 
 */
-function setMatrixUniforms(){
-    gl.uniformMatrix4fv(prg.uMVMatrix, false, camera.getViewTransform()); //Maps the Model-View matrix to the uniform prg.uMVMatrix
+function setMatrixUniforms(update){
+    /* camera */
+    gl.uniform3fv(prg.uCameraPosition, camera.position);
+    var strengthness = 0.4;
+    var lightColors = [];
+    lightColors.push(1-controller.lightColor1[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor1[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor1[2]*strengthness/255);
+    lightColors.push(1-controller.lightColor2[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor2[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor2[2]*strengthness/255);
+    lightColors.push(1-controller.lightColor3[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor3[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor3[2]*strengthness/255);
+    lightColors.push(1-controller.lightColor4[0]*strengthness/255);
+    lightColors.push(1-controller.lightColor4[1]*strengthness/255);
+    lightColors.push(1-controller.lightColor4[2]*strengthness/255);
+
+    /* light */
+    //console.info("light colors: "+lightColors);
+    gl.uniform4fv(prg.uLightAmbient, [0.05, 0.05, 0.05, 1.0]);
+    gl.uniform3fv(prg.uLightColor,   lightColors);
+    gl.uniform3fv(prg.uLightPosition,[5,3,0, 0,0,100, -3,-5,0, 0,0,-3]);
+    gl.uniform3fv(prg.uLightCoefficient, [0.1,0.2,0.7, 0.0,0.3,0.9, 0.0,0.2,0.3]);
+
+    /* tiny circles' radius */
+    gl.uniform1f(prg.uSphereRadius, controller.pointRadius);
+    gl.uniform1f(prg.uSphereDensity, 1.0/controller.pointDensity);
+
+    /* objects */
+    if(update == true ||
+       Scene.objects.length     != numObjectRecord ||  //to avoid cpu overloading
+       controller.crystalLength != cubeLenRecord   ||
+       controller.crystalWidth  != cubeWidRecord   ||
+       controller.crystalHeight != cubeHigRecord ){ 
+        numObjectRecord = Scene.objects.length;
+        cubeLenRecord   = controller.crystalLength;
+        cubeWidRecord   = controller.crystalWidth;
+        cubeHigRecord   = controller.crystalHeight;
+        var indices = [];
+        var vertices = [];
+        var vlength = 0;
+        for (var k = 0; k < Scene.objects.length; k++) {
+            var o = Scene.objects[k];
+            //if more than one object, the indices have to be offset
+            if(vlength == 0){
+                indices = indices.concat(o.indices);
+            }else{
+                for (var i = 0; i < o.indices.length; i++) {
+                    indices.push(o.indices[i]+vlength); 
+                }
+            }
+
+            //crystal cube scaling matrix
+            var adjestMatrix = mat4.create();
+            var scaleVector = vec3.create();
+            vec3.set(scaleVector, controller.crystalLength, controller.crystalWidth, controller.crystalHeight);
+            mat4.scale(adjestMatrix, adjestMatrix, scaleVector);
+
+            //input object rotation matrix
+            var rotateM = mat4.create();
+            mat4.rotateX(rotateM, rotateM, Math.PI/2);
+
+            //input object max/min len, wid, hig, used for adjesting cube size automatically
+            var objMax = [0,0,0];
+            var objMin = [0,0,0];
+
+            for(var i=0; i<o.vertices.length; i+=3){
+                var v = vec3.create();
+                vec3.set(v, o.vertices[i], o.vertices[i+1], o.vertices[i+2]);
+                if(o.property == PROPERTY_CRYSTAL){
+                    vec3.transformMat4(v, v, adjestMatrix);
+                }else if(o.property == PROPERTY_CLOUD_POINTS){
+                    vec3.transformMat4(v, v, rotateM);
+                    for(var a=0; a<3; a++){
+                        if(objMax[a] < v[a]) objMax[a] = v[a];
+                        if(objMin[a] > v[a]) objMin[a] = v[a];
+                    }
+                }
+                vertices.push(v[0]);
+                vertices.push(v[1]);
+                vertices.push(v[2]);
+                vertices.push(o.property); //used 4th element for property
+            }
+
+            //setup cube size automatically
+            if(o.property == PROPERTY_CLOUD_POINTS && update == true){
+                controller.crystalLength = Math.floor(objMax[0]-objMin[0])+3;
+                controller.crystalWidth  = Math.floor(objMax[1]-objMin[1])+3;
+                controller.crystalHeight = Math.floor(objMax[2]-objMin[2])+3;
+            }
+
+            //accumulate # total vertices for offsetting next obj's indices
+            vlength += o.vertices.length/3; 
+            //console.info("obj "+k+"'s # vertices: "+ o.vertices.length/3 + ", # indices:" + o.indices.length/3);
+        }
+        gl.uniform1i(prg.uInticesNumber, indices.length/3);
+        gl.uniform1i(prg.uVerticesNumber, vertices.length/4);
+        //console.info("== total # vertices:"+ vertices.length/3 + ", # indices: " + indices.length/3 +" ==");
+
+        if(vertices.length > 0){
+            if (!gl.getExtension('OES_texture_float')) {
+                alert('no floating point texture support');
+                return;
+            }
+            
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleIndices);
+            gl.uniform1i(prg.uTriangleIndices, 1);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, indices.length/3, 1, 0, gl.RGB, gl.FLOAT, new Float32Array(indices));
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, prg.txTriangleVertices);
+            gl.uniform1i(prg.uTriangleVertices, 0);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, vertices.length/4, 1, 0, gl.RGBA, gl.FLOAT, new Float32Array(vertices));
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        }
+    }
+}
+
+/**
+* Draw scene, will be called if any parameter is been changed
+*/
+function drawScene(update)
+{
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clearDepth(1000.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	gl.viewport(0, 0, app.canvas.width, app.canvas.height);
     
-    gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);    //Maps the Perspective matrix to the uniform prg.uPMatrix
+    //set uniforms values (put light & obj info)
+    setMatrixUniforms(update);
+
+    //initialize plot vectices
+    gl.enableVertexAttribArray(prg.aPlotPosition);
+    gl.disableVertexAttribArray(prg.aVertexPosition);
     
-    mat4.transpose(camera.matrix, nMatrix);               //Calculates the Normal matrix 
-    gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);    //Maps the Normal matrix to the uniform prg.uNMatrix
+    //set plot position in world space
+    var corners = camera.getViewPlane();
+    gl.bindBuffer(gl.ARRAY_BUFFER, camera.cornersVertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(corners), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(prg.aPlotPosition);
+    gl.vertexAttribPointer(prg.aPlotPosition, 3, gl.FLOAT, false, 0, 0);
+    
+    //enable vertex position which cover the whole NDC
+    gl.enableVertexAttribArray(prg.aVertexPosition);
+
+    //start drawing ray tracing
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
-
-/*
-var timer = 0;
-function flipAnim(){
-	if (timer) {
-	  clearInterval(timer);
-	  timer = 0;
-	}
-	else {
-	  timer = setInterval(drawScene, 15);
-	}
-}
-
-var ratio;
-function resizeCanvas(w){
-	if (w == -1) {
-	  document.getElementById('contrib').style.display = "none";
-	  canvas.style.display = "none";
-	  canvas.parentNode.style.position = "absolute";
-	  canvas.parentNode.style.top = 0;
-	  w = canvas.parentNode.parentNode.offsetWidth;
-	  ratio = w / canvas.parentNode.parentNode.offsetHeight;
-	  canvas.style.display = "";
-	}
-	else {
-	  document.getElementById('contrib').style.display = "";
-	  ratio = 1.6;
-	  canvas.parentNode.style.position = "";
-	  canvas.parentNode.style.top = "";
-	  window.onresize = null;
-	}
-	canvas.width = w;
-	canvas.height = w / ratio;
-
-	gl.viewport(0, 0, canvas.width, canvas.height);
-
-	t -= 0.03;
-	drawScene();
-}
-
-var resizeTimer = false;
-function fullScreen() {
-	window.onresize = function() {
-	  if (resizeTimer) {
-	    clearTimeout(resizeTimer);
-	  }
-	  resizeTimer = setTimeout(function() {
-	    fullScreen();
-	  }, 100);
-	};
-
-	resizeCanvas(-1);
-}*/
