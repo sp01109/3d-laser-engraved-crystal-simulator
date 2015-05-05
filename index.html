@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <title>Simulate Crystal Laser Engraving</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="css/stylesheets/normalize.css" media="screen">
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/projPage.css">
+    <link rel="stylesheet" type="text/css" href="css/stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="css/stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="css/stylesheets/projPage.css">
     <script src="js/backtotop/modernizr.js"></script>
   </head>
   <body>
@@ -22,6 +22,7 @@
         <div class="menu_item" id="implementation"><a href="#algorithm_title">Implementation</a></div>
         <div class="menu_item" id="challenge"><a href="#challenges_title">Challenges</a></div>
         <div class="menu_item" id="result"><a href="#result_title">Result</a></div>
+        <div class="menu_item" id="demo"><a href="#demo_title">Demo</a></div>
         <div class="menu_item" id="team"><a href="#contact_title">Team</a></div>
         <div class="menu_item" id="reference"><a href="#reference_title">Reference</a></div>
       </div>
@@ -104,6 +105,9 @@ In addition, since WebGL doesn’t allow recursive function and the ray-tracing 
 <p>In this project, we successfully applied ray-tracing to our crystal model with realistic and beautiful shinning effect under lightening.  The engraved sculpture in the crystal is composed of multiple small and shinny spheres. We prove that using ray-tracing and cloud points algorithm to create an interactive 3D laser engraving simulator is a possible and a great idea. What is different from other teams are, first, we not only implemented the ray-tracing algorithm on WebGL with only hardcoded spheres but also feed an object information into GPU by using texture memory space. Moreover, we developped a way to transform the object into a set of cloud points. Finally, we even consider the camera view control to make this program be interactive.</br>
 There are other parts can be improved. For example, there are some black parts in those cloud points. The reason might be the points in each triangle are not distributed very well. In addition, this program can only load an object file less than thousand vertices or faces because of the lack of texture memory and the consuming calculation. We may optimize it by thinking different calculation way. In the end, the below figure is our achievement in this project. You can play with it by clicking this <a href="http://sp01109.github.io/3d-laser-engraved-crystal-simulator/3DLaserEngraveSimulator.html">link</a> . We are proud of it. Have fun!
 </p>
+<h3>
+<a id="demo_title" class="anchor" href="#demo_title" aria-hidden="true"><span class="octicon octicon-link"></span></a>Demo</h3>
+<a href="http://sp01109.github.io/3d-laser-engraved-crystal-simulator/3DLaserEngraveSimulator.html"><u>Play it</u></a>
 <figure>
 <img id="ResultImg2" src="img/expectedFinal.png" alt="expected result"></img></br>
 <figCaption>Figure 12. Final Result2</figCaption>
@@ -133,7 +137,6 @@ There are other parts can be improved. For example, there are some black parts i
 <p>dat.Gui:</br>
   • <a href="https://code.google.com/p/dat-gui/">https://code.google.com/p/dat-gui/</a><p>
  <a href="https://github.com/sp01109/3d-laser-engraved-crystal-simulator">View on GitHub</a></br>
-<a href="http://sp01109.github.io/3d-laser-engraved-crystal-simulator/3DLaserEngraveSimulator.html">Demo</a>
  
     </section>
   <a href="#0" class="cd-top">Top</a>

@@ -1,3 +1,25 @@
+body figure{
+  display: table;
+  margin: 0;
+}
+figCaption{
+  text-align: center;
+  font-size: 1rem;
+}
+#resultCaption{
+  margin-left: 240px;
+}
+
+#resultCaption2{
+  margin-left: 20px;
+}
+#algCaption{
+  margin-left: 40px;
+}
+label{
+  font-size: 1rem;
+}
+
 #finalResultImg{
 	width:640px;
 	height:450px;
@@ -16,7 +38,7 @@
 
 .menu_item{
 	float:left;
-	margin-right: 60px;
+	margin-right: 40px;
 	cursor: pointer;
 	height:80px;
 }
@@ -58,7 +80,7 @@
   overflow: hidden;
   text-indent: 100%;
   white-space: nowrap;
-  background: #159957 url(../img/cd-top-arrow.svg) no-repeat center 50%;
+  background: #159957 url(../../img/cd-top-arrow.svg) no-repeat center 50%;
   visibility: hidden;
   opacity: 0;
   -webkit-transition: opacity .3s 0s, visibility 0s .3s;
